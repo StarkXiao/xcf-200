@@ -55,3 +55,11 @@ desktop.ini
 *.tmp
 *.temp
 *.bak
+
+# Backend data (sample data can be committed, but runtime data should be ignored)
+backend/data/*.json.bak
+backend/data/*.tmp
+
+# Frontend specific
+frontend/dist-ssr
+*.local
