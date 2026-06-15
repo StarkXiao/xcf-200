@@ -1,0 +1,15 @@
+{
+  "users": [
+    {
+      "id": "user_001",
+      "username": "星尘旅人",
+      "email": "stardust@example.com",
+      "password": "123456",
+      "avatar": "🌟",
+      "bio": "在时间的缝隙里，寻找那颗属于我的星星。",
+      "createdAt": "2025-01-15T10:30:00.000Z",
+      "sentLetters": 12,
+      "receivedLetters": 8
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "emotions": [
+    { "id": "emo_001", "name": "思念", "color": "#9B59B6", "icon": "💭", "count": 428 },
+    { "id": "emo_002", "name": "希望", "color": "#F1C40F", "icon": "✨", "count": 356 },
+    { "id": "emo_003", "name": "勇气", "color": "#E74C3C", "icon": "🔥", "count": 289 },
+    { "id": "emo_004", "name": "爱情", "color": "#FF6B9D", "icon": "💕", "count": 512 },
+    { "id": "emo_005", "name": "遗憾", "color": "#7F8C8D", "icon": "🍂", "count": 234 },
+    { "id": "emo_006", "name": "亲情", "color": "#E67E22", "icon": "🏠", "count": 378 },
+    { "id": "emo_007", "name": "治愈", "color": "#2ECC71", "icon": "🌿", "count": 467 },
+    { "id": "emo_008", "name": "好奇", "color": "#3498DB", "icon": "🔭", "count": 189 },
+    { "id": "emo_009", "name": "孤独", "color": "#34495E", "icon": "🌙", "count": 312 },
+    { "id": "emo_010", "name": "温暖", "color": "#FF9A8B", "icon": "☀️", "count": 543 },
+    { "id": "emo_011", "name": "怀念", "color": "#A1887F", "icon": "📷", "count": 267 },
+    { "id": "emo_012", "name": "幸福", "color": "#F06292", "icon": "🎀", "count": 401 },
+    { "id": "emo_013", "name": "神秘", "color": "#5E35B1", "icon": "🌌", "count": 156 },
+    { "id": "emo_014", "name": "梦想", "color": "#64B5F6", "icon": "☁️", "count": 334 },
+    { "id": "emo_015", "name": "告别", "color": "#546E7A", "icon": "🕊️", "count": 178 }
+  ]
+}

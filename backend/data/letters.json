@@ -1,0 +1,168 @@
+{
+  "letters": [
+    {
+      "id": "letter_001",
+      "senderId": "user_001",
+      "senderName": "星尘旅人",
+      "recipient": "未来的自己",
+      "recipientType": "future",
+      "title": "致十年后的我",
+      "content": "亲爱的你：\n\n如果你正在读这封信，说明时间已经过去了十年。我很好奇，现在的你是否还记得写下这封信时的心情？\n\n窗外的星空依然璀璨吗？你是否已经找到了那颗属于自己的星星？\n\n请记得，无论发生什么，都要像现在这样，心怀希望地走下去。\n\n永远爱你的，\n十年前的自己",
+      "emotions": ["思念", "希望", "勇气"],
+      "isPublic": true,
+      "isAnonymous": false,
+      "likes": 42,
+      "createdAt": "2025-02-14T20:00:00.000Z",
+      "deliverAt": "2035-02-14T00:00:00.000Z",
+      "replies": [
+        {
+          "id": "reply_001",
+          "letterId": "letter_001",
+          "fromParallel": "parallel_A",
+          "senderName": "平行星尘",
+          "content": "我来自另一条时间线，那里的你选择了不同的道路。但我想告诉你，无论走哪条路，星空都一样美丽。——来自平行世界的你",
+          "createdAt": "2025-02-20T08:15:00.000Z",
+          "emotion": "温暖"
+        },
+        {
+          "id": "reply_002",
+          "letterId": "letter_001",
+          "fromParallel": "star_messenger",
+          "senderName": "星光信使",
+          "content": "这封信已被星际邮局收录，它将穿越时间的长河，安全送达十年后的你手中。愿你的心愿如星光永恒。",
+          "createdAt": "2025-02-15T06:00:00.000Z",
+          "emotion": "神秘"
+        }
+      ]
+    },
+    {
+      "id": "letter_002",
+      "senderId": "auto_002",
+      "senderName": "月光下的猫",
+      "recipient": "平行世界的Ta",
+      "recipientType": "parallel",
+      "title": "如果你还记得那个夏天",
+      "content": "亲爱的Ta：\n\n在我的世界里，我们最后还是走散了。听说在平行宇宙里，每一种可能性都真实存在。\n\n我想知道，在你那里，我们是否一起看完了那场烟花？是否在秋天的枫叶下，牵着手走过了那条小路？\n\n如果答案是肯定的，请替我好好珍惜。如果不是……也没关系，因为至少在某个地方，我们是幸福的。\n\n想念你的，\n这个世界的我",
+      "emotions": ["爱情", "遗憾", "思念"],
+      "isPublic": true,
+      "isAnonymous": true,
+      "likes": 128,
+      "createdAt": "2025-03-01T23:45:00.000Z",
+      "deliverAt": "2025-03-01T23:45:00.000Z",
+      "replies": [
+        {
+          "id": "reply_003",
+          "letterId": "letter_002",
+          "fromParallel": "parallel_B2",
+          "senderName": "枫叶林的守望者",
+          "content": "我是收到这封信的那个Ta。枫叶红了十七次，我们的手从没有松开过。谢谢你，另一个世界的我，把这份心意送到了这里。",
+          "createdAt": "2025-03-05T17:30:00.000Z",
+          "emotion": "幸福"
+        }
+      ]
+    },
+    {
+      "id": "letter_003",
+      "senderId": "auto_003",
+      "senderName": "深海来信",
+      "recipient": "已故的外婆",
+      "recipientType": "past",
+      "title": "外婆，海又涨潮了",
+      "content": "亲爱的外婆：\n\n又到了每年最想念您的季节。\n\n您说过，人离开后会变成海里的一滴水，随潮汐回到想念的人身边。今天我去了海边，浪花温柔地拍打着脚踝，我知道，那是您回来看我了。\n\n我学会了您最拿手的那道桂花糕，虽然味道还差一点点。下次，我再努力练习。\n\n潮汐会带走思念，也会带来重逢。\n\n永远爱您的外孙女",
+      "emotions": ["思念", "亲情", "治愈"],
+      "isPublic": true,
+      "isAnonymous": false,
+      "likes": 256,
+      "createdAt": "2025-04-05T06:00:00.000Z",
+      "deliverAt": "2025-04-05T06:00:00.000Z",
+      "replies": [
+        {
+          "id": "reply_004",
+          "letterId": "letter_003",
+          "fromParallel": "ocean_spirit",
+          "senderName": "潮汐精灵",
+          "content": "我是大海的使者。你的外婆让我转告你：她一直都在，每一次潮起潮落，都是她的拥抱。你的桂花糕，她尝到了，很美味。",
+          "createdAt": "2025-04-05T08:30:00.000Z",
+          "emotion": "治愈"
+        }
+      ]
+    },
+    {
+      "id": "letter_004",
+      "senderId": "auto_004",
+      "senderName": "银河漂流瓶",
+      "recipient": "未知的星球居民",
+      "recipientType": "parallel",
+      "title": "来自蓝色星球的问候",
+      "content": "你好，素未谋面的朋友：\n\n我来自一个71%被蓝色海洋覆盖的星球。我们这里有四季轮转，有花开花落，有爱与被爱的能力。\n\n我不知道你是否能读懂这种叫做\"文字\"的符号，但如果你能感受到一丝温暖，那么这场跨越星海的相遇就有了意义。\n\n我们的星球叫地球。我们并不孤单，因为我们仰望同一片星空。\n\n祝你所在的世界，也同样美丽。\n\n来自第三颗蓝色行星的朋友",
+      "emotions": ["好奇", "孤独", "希望"],
+      "isPublic": true,
+      "isAnonymous": true,
+      "likes": 512,
+      "createdAt": "2025-05-20T00:00:00.000Z",
+      "deliverAt": "2025-05-20T00:00:00.000Z",
+      "replies": [
+        {
+          "id": "reply_005",
+          "letterId": "letter_004",
+          "fromParallel": "alpha_centauri",
+          "senderName": "比邻星回音",
+          "content": "信号已接收。在我们的世界，思念会以光的形式传播。你信中的温暖，已照亮了我所在的星球一角。期待下次相遇。",
+          "createdAt": "2025-05-25T12:00:00.000Z",
+          "emotion": "温暖"
+        },
+        {
+          "id": "reply_006",
+          "letterId": "letter_004",
+          "fromParallel": "nebula_poet",
+          "senderName": "星云诗人",
+          "content": "我将你的信翻译成了星尘之诗，让它在宇宙中永远流传。蓝色星球的朋友，你并不孤独。",
+          "createdAt": "2025-06-01T21:00:00.000Z",
+          "emotion": "希望"
+        }
+      ]
+    },
+    {
+      "id": "letter_005",
+      "senderId": "auto_005",
+      "senderName": "纸飞机的梦",
+      "recipient": "童年的自己",
+      "recipientType": "past",
+      "title": "那个折飞机的小孩",
+      "content": "亲爱的小小我：\n\n你还记得在教室最后一排折纸飞机的那个下午吗？\n\n你在机翼上写了很多愿望，有些我已经帮你实现了，有些……还在路上。你当时最害怕的那场考试，其实没有那么难。你偷偷喜欢的那个同桌，多年后会变成很好的朋友。\n\n对了，你不用再担心长大了会不开心。我现在还是很喜欢看动画片，喜欢吃糖，喜欢像你一样，相信每一个纸飞机都会飞到云上去。\n\n谢谢你，小小的我，你给的勇气，我一直带着。\n\n长大了的你",
+      "emotions": ["怀念", "治愈", "勇气"],
+      "isPublic": true,
+      "isAnonymous": false,
+      "likes": 320,
+      "createdAt": "2025-06-01T14:00:00.000Z",
+      "deliverAt": "2025-06-01T14:00:00.000Z",
+      "replies": []
+    },
+    {
+      "id": "letter_006",
+      "senderId": "auto_006",
+      "senderName": "午夜电台",
+      "recipient": "正在失眠的你",
+      "recipientType": "future",
+      "title": "在凌晨三点给你写这封信",
+      "content": "陌生人：\n\n如果你正好在凌晨三点刷到这封信，那么，请允许我陪你一会儿。\n\n我知道睡不着的夜晚很难熬。那些没说出口的话、没完成的事、没兑现的承诺，都在黑暗里张牙舞爪。\n\n但你知道吗？凌晨三点的月亮很温柔，城市的路灯为你留着，风也轻得怕吵醒你。这个世界，在你看不见的地方，偷偷爱着你。\n\n喝杯温牛奶吧，然后闭上眼睛。明天又是新的一天。\n\n陪你熬夜的，\n一个路过的人",
+      "emotions": ["孤独", "治愈", "温暖"],
+      "isPublic": true,
+      "isAnonymous": true,
+      "likes": 890,
+      "createdAt": "2025-06-10T03:00:00.000Z",
+      "deliverAt": "2025-06-10T03:00:00.000Z",
+      "replies": [
+        {
+          "id": "reply_007",
+          "letterId": "letter_006",
+          "fromParallel": "night_owl",
+          "senderName": "夜猫子一号",
+          "content": "正好失眠看到，真的哭了。谢谢你，陌生人。我现在要去热一杯牛奶了。",
+          "createdAt": "2025-06-10T03:45:00.000Z",
+          "emotion": "治愈"
+        }
+      ]
+    }
+  ]
+}
