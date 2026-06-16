@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { X, Send, Sparkles, Shield, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Send, Sparkles, Shield, RefreshCw, AlertTriangle, Heart } from 'lucide-react';
 import { strangerReplyApi } from '@/api/strangerReply';
+import { guardianStationApi } from '@/api/guardianStation';
 import EmotionTag from '@/components/Emotion/EmotionTag';
-import type { ReplyTask, AnonymousIdentity } from '@/types';
+import type { ReplyTask, AnonymousIdentity, ContentAnalysisResult } from '@/types';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
 
@@ -27,6 +28,9 @@ export default function ReplyModal({ isOpen, onClose, task, onSuccess }: ReplyMo
   const [submitting, setSubmitting] = useState(false);
   const [useCustomName, setUseCustomName] = useState(false);
   const [customName, setCustomName] = useState('');
+  const [riskAnalysis, setRiskAnalysis] = useState<ContentAnalysisResult | null>(null);
+  const [riskAnalyzing, setRiskAnalyzing] = useState(false);
+  const riskAnalysisTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -36,8 +40,43 @@ export default function ReplyModal({ isOpen, onClose, task, onSuccess }: ReplyMo
       setSelectedEmotion('温暖');
       setUseCustomName(false);
       setCustomName('');
+      setRiskAnalysis(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (content.trim().length < 20) {
+      setRiskAnalysis(null);
+      return;
+    }
+
+    if (riskAnalysisTimer.current) {
+      clearTimeout(riskAnalysisTimer.current);
+    }
+
+    riskAnalysisTimer.current = setTimeout(async () => {
+      try {
+        setRiskAnalyzing(true);
+        const res = await guardianStationApi.analyzeContent({
+          content,
+          contentType: 'reply',
+        });
+        if (res.success) {
+          setRiskAnalysis(res.data);
+        }
+      } catch (err) {
+        // ignore
+      } finally {
+        setRiskAnalyzing(false);
+      }
+    }, 800);
+
+    return () => {
+      if (riskAnalysisTimer.current) {
+        clearTimeout(riskAnalysisTimer.current);
+      }
+    };
+  }, [content]);
 
   const fetchIdentities = async () => {
     try {
@@ -238,6 +277,118 @@ export default function ReplyModal({ isOpen, onClose, task, onSuccess }: ReplyMo
                   {content.length} 字 / 至少 20 字
                 </p>
               </div>
+
+              {riskAnalyzing && (
+                <div className="mt-3 p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-center gap-2 animate-pulse">
+                  <span className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs text-blue-700">正在分析内容安全...</p>
+                </div>
+              )}
+
+              {!riskAnalyzing && riskAnalysis && riskAnalysis.level !== 'safe' && (
+                <div
+                  className={`mt-3 p-4 rounded-xl border flex flex-col gap-3 ${
+                    riskAnalysis.level === 'severe'
+                      ? 'bg-red-50 border-red-300'
+                      : riskAnalysis.level === 'moderate'
+                      ? 'bg-orange-50 border-orange-300'
+                      : 'bg-yellow-50 border-yellow-300'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        riskAnalysis.level === 'severe'
+                          ? 'bg-red-100'
+                          : riskAnalysis.level === 'moderate'
+                          ? 'bg-orange-100'
+                          : 'bg-yellow-100'
+                      }`}
+                    >
+                      {riskAnalysis.level === 'severe' || riskAnalysis.level === 'moderate' ? (
+                        <AlertTriangle
+                          className={`w-5 h-5 ${
+                            riskAnalysis.level === 'severe'
+                              ? 'text-red-500'
+                              : 'text-orange-500'
+                          }`}
+                        />
+                      ) : (
+                        <Heart className="w-5 h-5 text-yellow-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p
+                          className={`font-semibold ${
+                            riskAnalysis.level === 'severe'
+                              ? 'text-red-800'
+                              : riskAnalysis.level === 'moderate'
+                              ? 'text-orange-800'
+                              : 'text-yellow-800'
+                          }`}
+                        >
+                          {riskAnalysis.levelInfo.label}
+                        </p>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            riskAnalysis.level === 'severe'
+                              ? 'bg-red-200 text-red-800'
+                              : riskAnalysis.level === 'moderate'
+                              ? 'bg-orange-200 text-orange-800'
+                              : 'bg-yellow-200 text-yellow-800'
+                          }`}
+                        >
+                          {riskAnalysis.score} 分
+                        </span>
+                      </div>
+                      <p
+                        className={`text-sm leading-relaxed ${
+                          riskAnalysis.level === 'severe'
+                            ? 'text-red-700'
+                            : riskAnalysis.level === 'moderate'
+                            ? 'text-orange-700'
+                            : 'text-yellow-700'
+                        }`}
+                      >
+                        {riskAnalysis.level === 'severe' &&
+                          '回信中检测到可能涉及严重风险的内容。请用温暖的方式表达关心，避免使用可能加剧情绪的言辞。'}
+                        {riskAnalysis.level === 'moderate' &&
+                          '回信中包含一些需要注意的表述。请以关怀和支持的态度回应，让对方感受到温暖。'}
+                        {riskAnalysis.level === 'mild' &&
+                          '回信中略有一些需要注意的表达倾向。请保持积极温暖的语气，传递善意。'}
+                      </p>
+                    </div>
+                  </div>
+                  {riskAnalysis.details.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {riskAnalysis.details.map((detail, idx) => (
+                        <span
+                          key={idx}
+                          className={`px-2 py-1 rounded-lg text-xs ${
+                            riskAnalysis.level === 'severe'
+                              ? 'bg-red-100 text-red-700'
+                              : riskAnalysis.level === 'moderate'
+                              ? 'bg-orange-100 text-orange-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}
+                        >
+                          注意：{detail.keywords.join('、')}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!riskAnalyzing && riskAnalysis && riskAnalysis.level === 'safe' && (
+                <div className="mt-3 p-3 rounded-xl bg-green-50 border border-green-200 flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-green-600" />
+                  <p className="text-sm text-green-700">
+                    ✨ 内容安全检测通过，你的回信会温暖Ta的心
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

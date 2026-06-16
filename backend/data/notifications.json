@@ -1,6 +1,16 @@
 {
   "notifications": [
     {
+      "id": "mqgmdq7pu10mautqo",
+      "userId": "test_user_002",
+      "type": "new_reply",
+      "title": "收到一封陌生回信 ✉️",
+      "content": "你的信《测试信件-抑郁和自杀》收到了来自 测试匿名身份 的回信",
+      "relatedId": "mqgmcvb4mhbp4vlr8",
+      "read": false,
+      "createdAt": "2026-06-16T12:30:01.717Z"
+    },
+    {
       "id": "mqg20npysb5l37muy",
       "userId": "user_001",
       "type": "new_reply",

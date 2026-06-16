@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Send, Eye, EyeOff, Sparkles, Feather, Target, Zap,
-  Clock, Gauge, Calendar as CalendarIcon
+  Clock, Gauge, Calendar as CalendarIcon, AlertTriangle, Heart, Shield
 } from 'lucide-react';
 import EmotionTag from '@/components/Emotion/EmotionTag';
 import { lettersApi } from '@/api/letters';
+import { guardianStationApi } from '@/api/guardianStation';
 import { emotionsApi } from '@/api/emotions';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
-import type { Emotion } from '@/types';
+import type { Emotion, ContentAnalysisResult } from '@/types';
 import { getSpeedInfo } from '@/utils/helpers';
 
 const recipientTypes = [
@@ -48,6 +49,9 @@ export default function WriteLetter() {
   const [emotions, setEmotions] = useState<Emotion[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [riskAnalysis, setRiskAnalysis] = useState<ContentAnalysisResult | null>(null);
+  const [riskAnalyzing, setRiskAnalyzing] = useState(false);
+  const riskAnalysisTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const deliverySpeedOptions = [
     {
@@ -75,6 +79,41 @@ export default function WriteLetter() {
     fetchEmotions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const combinedContent = title + '\n' + content;
+    if (combinedContent.trim().length < 20) {
+      setRiskAnalysis(null);
+      return;
+    }
+
+    if (riskAnalysisTimer.current) {
+      clearTimeout(riskAnalysisTimer.current);
+    }
+
+    riskAnalysisTimer.current = setTimeout(async () => {
+      try {
+        setRiskAnalyzing(true);
+        const res = await guardianStationApi.analyzeContent({
+          content: combinedContent,
+          contentType: 'letter',
+        });
+        if (res.success) {
+          setRiskAnalysis(res.data);
+        }
+      } catch (err) {
+        // ignore
+      } finally {
+        setRiskAnalyzing(false);
+      }
+    }, 800);
+
+    return () => {
+      if (riskAnalysisTimer.current) {
+        clearTimeout(riskAnalysisTimer.current);
+      }
+    };
+  }, [title, content]);
 
   const fetchEmotions = async () => {
     try {
@@ -399,6 +438,132 @@ export default function WriteLetter() {
                     }`}
                   />
                   {errors.content && <p className="mt-1.5 text-xs text-red-500">{errors.content}</p>}
+
+                  {riskAnalyzing && (
+                    <div className="mt-3 p-3 rounded-xl bg-blue-50 border border-blue-200 flex items-center gap-2 animate-pulse">
+                      <span className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-xs text-blue-700">正在分析内容安全...</p>
+                    </div>
+                  )}
+
+                  {!riskAnalyzing && riskAnalysis && riskAnalysis.level !== 'safe' && (
+                    <div
+                      className={`mt-3 p-4 rounded-xl border flex flex-col gap-3 ${
+                        riskAnalysis.level === 'severe'
+                          ? 'bg-red-50 border-red-300'
+                          : riskAnalysis.level === 'moderate'
+                          ? 'bg-orange-50 border-orange-300'
+                          : 'bg-yellow-50 border-yellow-300'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                            riskAnalysis.level === 'severe'
+                              ? 'bg-red-100'
+                              : riskAnalysis.level === 'moderate'
+                              ? 'bg-orange-100'
+                              : 'bg-yellow-100'
+                          }`}
+                        >
+                          {riskAnalysis.level === 'severe' || riskAnalysis.level === 'moderate' ? (
+                            <AlertTriangle
+                              className={`w-5 h-5 ${
+                                riskAnalysis.level === 'severe'
+                                  ? 'text-red-500'
+                                  : 'text-orange-500'
+                              }`}
+                            />
+                          ) : (
+                            <Heart className="w-5 h-5 text-yellow-600" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p
+                              className={`font-semibold ${
+                                riskAnalysis.level === 'severe'
+                                  ? 'text-red-800'
+                                  : riskAnalysis.level === 'moderate'
+                                  ? 'text-orange-800'
+                                  : 'text-yellow-800'
+                              }`}
+                            >
+                              {riskAnalysis.levelInfo.label}
+                            </p>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                riskAnalysis.level === 'severe'
+                                  ? 'bg-red-200 text-red-800'
+                                  : riskAnalysis.level === 'moderate'
+                                  ? 'bg-orange-200 text-orange-800'
+                                  : 'bg-yellow-200 text-yellow-800'
+                              }`}
+                            >
+                              {riskAnalysis.score} 分
+                            </span>
+                          </div>
+                          <p
+                            className={`text-sm leading-relaxed ${
+                              riskAnalysis.level === 'severe'
+                                ? 'text-red-700'
+                                : riskAnalysis.level === 'moderate'
+                                ? 'text-orange-700'
+                                : 'text-yellow-700'
+                            }`}
+                          >
+                            {riskAnalysis.level === 'severe' &&
+                              '我们检测到内容中可能涉及严重的自伤或伤害风险。如果你或身边的人正处于困境，请一定记得，生命是最宝贵的。请拨打全国心理援助热线：400-161-9995（24小时）。'}
+                            {riskAnalysis.level === 'moderate' &&
+                              '我们感受到文字中承载的沉重情绪。请记得，困难只是暂时的，你并不孤单。如果需要倾诉，这里有很多人愿意倾听你。'}
+                            {riskAnalysis.level === 'mild' &&
+                              '我们注意到内容中可能有些负面情绪。希望你一切安好，如果需要帮助，随时可以寻求专业支持。'}
+                          </p>
+                        </div>
+                      </div>
+                      {riskAnalysis.details.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {riskAnalysis.details.map((detail, idx) => (
+                            <span
+                              key={idx}
+                              className={`px-2 py-1 rounded-lg text-xs ${
+                                riskAnalysis.level === 'severe'
+                                  ? 'bg-red-100 text-red-700'
+                                  : riskAnalysis.level === 'moderate'
+                                  ? 'bg-orange-100 text-orange-700'
+                                  : 'bg-yellow-100 text-yellow-700'
+                              }`}
+                            >
+                              检测到：{detail.keywords.join('、')}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="pt-2 mt-2 border-t border-dashed border-current/20">
+                        <p
+                          className={`text-xs flex items-center gap-1 ${
+                            riskAnalysis.level === 'severe'
+                              ? 'text-red-600'
+                              : riskAnalysis.level === 'moderate'
+                              ? 'text-orange-600'
+                              : 'text-yellow-600'
+                          }`}
+                        >
+                          <Shield className="w-3 h-3" />
+                          匿名守护站将关注此内容，守护员会提供关怀支持
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!riskAnalyzing && riskAnalysis && riskAnalysis.level === 'safe' && (
+                    <div className="mt-3 p-3 rounded-xl bg-green-50 border border-green-200 flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-green-600" />
+                      <p className="text-sm text-green-700">
+                        ✨ 内容安全检测通过，愿你的心意温暖传递
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div>

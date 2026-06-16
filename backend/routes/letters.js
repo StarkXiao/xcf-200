@@ -2,6 +2,144 @@ const express = require('express');
 const router = express.Router();
 const { readJSON, writeJSON, generateId } = require('../utils/db');
 
+const RISK_KEYWORDS = {
+  self_harm: ['自杀', '自残', '不想活', '结束生命', '割腕', '跳楼', '上吊', '服毒', '安眠药', '离开这个世界', '解脱'],
+  harm_others: ['杀人', '报复', '同归于尽', '毁了他', '弄死', '打死', '杀了'],
+  depression: ['抑郁', '绝望', '没有希望', '活着没意思', '生无可恋', '行尸走肉', '空虚', '麻木'],
+  anxiety: ['焦虑', '恐慌', '害怕', '恐惧', '睡不着', '失眠', '心慌', '喘不过气'],
+  abuse: ['家暴', '虐待', '欺凌', '霸凌', '被欺负', '被打', '被骂', '骚扰'],
+  addiction: ['吸毒', '酗酒', '赌', '上瘾', '戒不掉']
+};
+
+const CONTENT_RISK_LEVELS = {
+  safe: { level: 0, label: '安全' },
+  mild: { level: 1, label: '轻度关注' },
+  moderate: { level: 2, label: '中度警示' },
+  severe: { level: 3, label: '重度风险' }
+};
+
+function analyzeContentRisk(content) {
+  if (!content) return { level: 'safe', score: 0, details: [], categories: [] };
+
+  let totalScore = 0;
+  let details = [];
+  let matchedCategories = [];
+
+  for (const [category, keywords] of Object.entries(RISK_KEYWORDS)) {
+    let categoryScore = 0;
+    let matchedKeywords = [];
+
+    for (const keyword of keywords) {
+      const regex = new RegExp(keyword, 'gi');
+      const matches = content.match(regex);
+      if (matches) {
+        categoryScore += matches.length * 10;
+        matchedKeywords.push(keyword);
+      }
+    }
+
+    if (categoryScore > 0) {
+      matchedCategories.push(category);
+      details.push({ category, score: categoryScore, keywords: matchedKeywords });
+      totalScore += categoryScore;
+    }
+  }
+
+  let level = 'safe';
+  if (totalScore >= 80) level = 'severe';
+  else if (totalScore >= 40) level = 'moderate';
+  else if (totalScore >= 10) level = 'mild';
+
+  return { level, score: totalScore, details, categories: matchedCategories };
+}
+
+function processContentRating(targetId, targetType, content, userId = null) {
+  const analysis = analyzeContentRisk(content);
+
+  if (analysis.level !== 'safe') {
+    const ratingData = readJSON('contentRatings.json') || { ratings: [] };
+    const existingRating = ratingData.ratings.find(r => r.targetId === targetId && r.targetType === targetType);
+
+    const ratingRecord = {
+      id: existingRating?.id || generateId(),
+      targetId,
+      targetType,
+      riskLevel: analysis.level,
+      riskScore: analysis.score,
+      riskCategories: analysis.categories,
+      details: analysis.details,
+      autoAnalyzed: true,
+      createdAt: existingRating?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (existingRating) {
+      const index = ratingData.ratings.findIndex(r => r.id === existingRating.id);
+      ratingData.ratings[index] = ratingRecord;
+    } else {
+      ratingData.ratings.push(ratingRecord);
+    }
+    writeJSON('contentRatings.json', ratingData);
+
+    if (analysis.level === 'severe' || analysis.level === 'moderate') {
+      const interventionData = readJSON('interventions.json') || { interventions: [] };
+      const existingIntervention = interventionData.interventions.find(
+        i => i.targetId === targetId && i.targetType === targetType && i.status !== 'closed'
+      );
+
+      if (!existingIntervention) {
+        const intervention = {
+          id: generateId(),
+          targetId,
+          targetType,
+          userId,
+          riskLevel: analysis.level,
+          riskScore: analysis.score,
+          type: analysis.level === 'severe' ? 'emergency' : 'system_tip',
+          status: 'pending',
+          priority: analysis.level === 'severe' ? 'high' : 'medium',
+          records: [
+            {
+              id: generateId(),
+              type: 'system_detection',
+              content: `系统检测到${CONTENT_RISK_LEVELS[analysis.level].label}风险内容（${targetType === 'letter' ? '信件' : '回信'}）`,
+              operator: 'system',
+              createdAt: new Date().toISOString()
+            }
+          ],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        interventionData.interventions.unshift(intervention);
+        writeJSON('interventions.json', interventionData);
+      }
+    }
+  }
+
+  return analysis;
+}
+
+function createReplyReviewTask(replyId, letterId, riskLevel, userId = null) {
+  const reviewData = readJSON('replyReviews.json') || { reviews: [] };
+  const existing = reviewData.reviews.find(r => r.replyId === replyId);
+
+  if (!existing) {
+    const reviewTask = {
+      id: generateId(),
+      letterId,
+      replyId,
+      userId,
+      riskLevel,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    reviewData.reviews.unshift(reviewTask);
+    writeJSON('replyReviews.json', reviewData);
+    return reviewTask;
+  }
+  return existing;
+}
+
 const DELIVERY_STAGES = [
   { stage: 'created', duration: 0, label: '信件诞生' },
   { stage: 'star_port', duration: 60000, label: '抵达星际邮局' },
@@ -329,10 +467,17 @@ router.post('/', (req, res) => {
     writeJSON('users.json', userData);
   }
 
+  const riskAnalysis = processContentRating(newLetter.id, 'letter', title + '\n' + content, senderId);
+
   res.json({
     success: true,
-    message: '信件已寄出，愿星光指引它到达',
-    data: newLetter
+    message: riskAnalysis.level !== 'safe'
+      ? '信件已寄出。我们注意到内容中可能包含需要关注的情绪，愿你被温柔以待。'
+      : '信件已寄出，愿星光指引它到达',
+    data: {
+      ...newLetter,
+      riskAnalysis
+    }
   });
 });
 
@@ -353,7 +498,7 @@ router.post('/:id/like', (req, res) => {
 
 router.post('/:id/reply', (req, res) => {
   const { id } = req.params;
-  const { fromParallel, senderName, content, emotion } = req.body;
+  const { fromParallel, senderName, content, emotion, replierId } = req.body;
 
   if (!content) {
     return res.status(400).json({ success: false, message: '回信内容不能为空' });
@@ -380,10 +525,18 @@ router.post('/:id/reply', (req, res) => {
   letter.replies.push(reply);
   writeJSON('letters.json', letterData);
 
+  const riskAnalysis = processContentRating(reply.id, 'reply', content, replierId);
+  createReplyReviewTask(reply.id, id, riskAnalysis.level, replierId);
+
   res.json({
     success: true,
-    message: '回信已送达',
-    data: reply
+    message: riskAnalysis.level !== 'safe'
+      ? '回信已送达。我们会留意内容安全，如有需要守护员会介入。'
+      : '回信已送达',
+    data: {
+      ...reply,
+      riskAnalysis
+    }
   });
 });
 

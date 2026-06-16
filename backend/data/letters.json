@@ -1,6 +1,77 @@
 {
   "letters": [
     {
+      "id": "mqgmcvb4mhbp4vlr8",
+      "senderId": "test_user_002",
+      "senderName": "测试用户",
+      "recipient": "未来的自己",
+      "recipientType": "future",
+      "title": "测试信件-抑郁和自杀",
+      "content": "我最近感到非常抑郁，活着没意思，真的很绝望，甚至想过自杀解脱，觉得生无可恋。每天都睡不着，焦虑恐慌，感觉喘不过气。",
+      "emotions": [
+        "痛苦",
+        "迷茫"
+      ],
+      "isPublic": true,
+      "isAnonymous": false,
+      "likes": 0,
+      "createdAt": "2026-06-16T12:29:21.664Z",
+      "deliverAt": "2026-06-16T12:29:21.664Z",
+      "replies": [
+        {
+          "id": "mqgmcvb4plgror5sd",
+          "letterId": "mqgmcvb4mhbp4vlr8",
+          "fromParallel": "time_traveler_51",
+          "senderName": "时光旅人",
+          "content": "我是穿梭在时间长河里的旅者，偶然遇见了你的信。我会把它小心护送到目的地，放心。",
+          "emotion": "希望",
+          "createdAt": "2026-06-16T12:52:53.932Z"
+        },
+        {
+          "id": "mqgmdq79wc8ua7hpk",
+          "letterId": "mqgmcvb4mhbp4vlr8",
+          "replierId": "test_replier_001",
+          "anonymousId": "custom_mqgmdq79xmbfhxl04",
+          "senderName": "测试匿名身份",
+          "fromParallel": "stranger_reply",
+          "content": "你应该去自杀，这样就解脱了，活着有什么意思，不如死了算了。",
+          "emotion": "冷漠",
+          "isStrangerReply": true,
+          "review": null,
+          "createdAt": "2026-06-16T12:30:01.701Z"
+        }
+      ]
+    },
+    {
+      "id": "mqgmbcd4h8nfr4111",
+      "senderId": "test_user_001",
+      "senderName": "????",
+      "recipient": "?????",
+      "recipientType": "future",
+      "title": "????-??",
+      "content": "?????????,?????,?????,????????,???????",
+      "emotions": [
+        "??",
+        "??"
+      ],
+      "isPublic": true,
+      "isAnonymous": false,
+      "likes": 0,
+      "createdAt": "2026-06-16T12:28:10.456Z",
+      "deliverAt": "2026-06-16T12:28:10.458Z",
+      "replies": [
+        {
+          "id": "mqgmbcd7voiwrp0uy",
+          "letterId": "mqgmbcd4h8nfr4111",
+          "fromParallel": "echo_world_12",
+          "senderName": "世界回声",
+          "content": "在某个平行时空里，有人收到了你的心意，并回以同样的温暖。思念永远不会被辜负。",
+          "emotion": "温暖",
+          "createdAt": "2026-06-16T13:21:21.017Z"
+        }
+      ]
+    },
+    {
       "id": "letter_001",
       "senderId": "user_001",
       "senderName": "星尘旅人",
