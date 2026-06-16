@@ -1,0 +1,99 @@
+{
+  "scheduledLetters": [
+    {
+      "id": "sched_001",
+      "letterId": "sched_letter_001",
+      "senderId": "user_001",
+      "title": "给自己的一周年礼物",
+      "recipient": "一年后的自己",
+      "recipientType": "future",
+      "scheduledDeliverAt": "2027-06-16T00:00:00.000Z",
+      "originalDeliverAt": "2027-06-16T00:00:00.000Z",
+      "status": "pending",
+      "reminderSettings": {
+        "before24h": true,
+        "before1h": true,
+        "onTime": true
+      },
+      "resentCount": 0,
+      "versionCount": 2,
+      "createdAt": "2026-06-10T10:00:00.000Z",
+      "updatedAt": "2026-06-12T15:30:00.000Z",
+      "rescheduleHistory": []
+    },
+    {
+      "id": "sched_002",
+      "letterId": "sched_letter_002",
+      "senderId": "user_001",
+      "title": "生日快乐，亲爱的",
+      "recipient": "最好的朋友",
+      "recipientType": "future",
+      "scheduledDeliverAt": "2026-12-25T08:00:00.000Z",
+      "originalDeliverAt": "2026-12-20T08:00:00.000Z",
+      "status": "pending",
+      "reminderSettings": {
+        "before24h": true,
+        "before1h": false,
+        "onTime": true
+      },
+      "resentCount": 0,
+      "versionCount": 1,
+      "createdAt": "2026-05-20T14:00:00.000Z",
+      "updatedAt": "2026-06-01T09:00:00.000Z",
+      "rescheduleHistory": [
+        {
+          "from": "2026-12-20T08:00:00.000Z",
+          "to": "2026-12-25T08:00:00.000Z",
+          "reason": "生日改到圣诞节当天了",
+          "changedAt": "2026-06-01T09:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "sched_003",
+      "letterId": "sched_letter_003",
+      "senderId": "user_001",
+      "title": "新年愿望清单",
+      "recipient": "明年的我",
+      "recipientType": "future",
+      "scheduledDeliverAt": "2026-01-01T00:00:00.000Z",
+      "originalDeliverAt": "2026-01-01T00:00:00.000Z",
+      "status": "delivered",
+      "reminderSettings": {
+        "before24h": true,
+        "before1h": true,
+        "onTime": true
+      },
+      "resentCount": 1,
+      "versionCount": 3,
+      "createdAt": "2025-12-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z",
+      "resentFrom": null,
+      "resentTo": "sched_004",
+      "reminderSent24h": true,
+      "reminderSent1h": true,
+      "reminderSentOnTime": true
+    },
+    {
+      "id": "sched_004",
+      "letterId": "sched_letter_004",
+      "senderId": "user_001",
+      "title": "新年愿望清单（二次寄送）",
+      "recipient": "后年的我",
+      "recipientType": "future",
+      "scheduledDeliverAt": "2027-01-01T00:00:00.000Z",
+      "originalDeliverAt": "2027-01-01T00:00:00.000Z",
+      "status": "pending",
+      "reminderSettings": {
+        "before24h": true,
+        "before1h": true,
+        "onTime": true
+      },
+      "resentCount": 0,
+      "versionCount": 1,
+      "createdAt": "2026-01-02T00:00:00.000Z",
+      "updatedAt": "2026-01-02T00:00:00.000Z",
+      "resentFrom": "sched_003"
+    }
+  ]
+}

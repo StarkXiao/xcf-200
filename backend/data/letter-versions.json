@@ -1,0 +1,49 @@
+{
+  "versions": [
+    {
+      "id": "ver_001",
+      "letterId": "sched_letter_001",
+      "version": 1,
+      "title": "给自己的一周年礼物",
+      "content": "亲爱的未来的我：\n\n今天是2026年6月10日，我写下这封信给一年后的你。\n\n不知道一年后的你，是否实现了当初的梦想？是否还保持着对生活的热爱？\n\n无论如何，请记得，每一天都是新的开始，要好好爱自己。\n\n爱你的，\n2026年的你",
+      "recipient": "一年后的自己",
+      "recipientType": "future",
+      "emotions": ["希望", "勇气", "思念"],
+      "isPublic": false,
+      "isAnonymous": false,
+      "versionNote": "初始版本",
+      "createdAt": "2026-06-10T10:00:00.000Z",
+      "createdBy": "user_001"
+    },
+    {
+      "id": "ver_002",
+      "letterId": "sched_letter_001",
+      "version": 2,
+      "title": "给自己的一周年礼物",
+      "content": "亲爱的未来的我：\n\n今天是2026年6月12日，我更新了这封信。\n\n最近我学会了很多新东西，也遇到了一些挑战。但我相信，这些经历都会让未来的你变得更好。\n\n不知道一年后的你，是否实现了当初的梦想？是否还保持着对生活的热爱？\n\n无论如何，请记得，每一天都是新的开始，要好好爱自己。\n\n对了，记得多锻炼身体，多喝水，少熬夜！\n\n永远爱你的，\n2026年的你",
+      "recipient": "一年后的自己",
+      "recipientType": "future",
+      "emotions": ["希望", "勇气", "思念", "温暖"],
+      "isPublic": false,
+      "isAnonymous": false,
+      "versionNote": "添加了更多生活感悟",
+      "createdAt": "2026-06-12T15:30:00.000Z",
+      "createdBy": "user_001"
+    },
+    {
+      "id": "ver_003",
+      "letterId": "sched_letter_002",
+      "version": 1,
+      "title": "生日快乐，亲爱的",
+      "content": "亲爱的朋友：\n\n生日快乐！🎂\n\n虽然我们不能经常见面，但你永远是我最好的朋友。\n\n希望新的一岁，你能实现所有的愿望，每天都开开心心的。\n\n别忘了，无论发生什么，我都会在你身边。\n\n爱你的，\n最好的朋友",
+      "recipient": "最好的朋友",
+      "recipientType": "future",
+      "emotions": ["温暖", "幸福", "友情"],
+      "isPublic": false,
+      "isAnonymous": false,
+      "versionNote": "初始版本",
+      "createdAt": "2026-05-20T14:00:00.000Z",
+      "createdBy": "user_001"
+    }
+  ]
+}

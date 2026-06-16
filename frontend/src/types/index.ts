@@ -602,3 +602,98 @@ export interface SubmitWorkData {
   emotions: string[];
   isAnonymous: boolean;
 }
+
+export type ScheduledStatus = 'pending' | 'delivered' | 'cancelled' | 'resent';
+
+export interface TimeRemaining {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  total: number;
+}
+
+export interface ReminderSettings {
+  before24h: boolean;
+  before1h: boolean;
+  onTime: boolean;
+}
+
+export interface RescheduleHistoryItem {
+  from: string;
+  to: string;
+  reason: string;
+  changedAt: string;
+}
+
+export interface ScheduledLetter {
+  id: string;
+  letterId: string;
+  senderId: string;
+  title: string;
+  recipient: string;
+  recipientType: string;
+  scheduledDeliverAt: string;
+  originalDeliverAt: string;
+  status: ScheduledStatus;
+  reminderSettings: ReminderSettings;
+  resentCount: number;
+  versionCount: number;
+  createdAt: string;
+  updatedAt: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+  resentFrom?: string;
+  resentTo?: string;
+  rescheduleHistory?: RescheduleHistoryItem[];
+  currentStatus?: ScheduledStatus;
+  timeRemaining?: TimeRemaining;
+  letter?: Letter;
+}
+
+export interface LetterVersion {
+  id: string;
+  letterId: string;
+  version: number;
+  title: string;
+  content: string;
+  recipient: string;
+  recipientType: string;
+  emotions: string[];
+  isPublic: boolean;
+  isAnonymous: boolean;
+  versionNote: string;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface CreateScheduledLetterData {
+  senderId: string;
+  senderName?: string;
+  recipient: string;
+  recipientType?: string;
+  title: string;
+  content: string;
+  emotions?: string[];
+  isPublic?: boolean;
+  isAnonymous?: boolean;
+  scheduledDeliverAt: string;
+  reminderSettings?: ReminderSettings;
+  versionNote?: string;
+}
+
+export interface FutureMailboxStats {
+  total: number;
+  pending: number;
+  delivered: number;
+  cancelled: number;
+  resent: number;
+  totalVersions: number;
+  upcoming: {
+    id: string;
+    title: string;
+    recipient: string;
+    scheduledDeliverAt: string;
+    timeRemaining: TimeRemaining;
+  }[];
+}
