@@ -820,6 +820,85 @@ export interface AchievementCenterData {
 
 export type RiskLevel = 'safe' | 'mild' | 'moderate' | 'severe';
 
+export interface ParallelMatchRule {
+  key: string;
+  label: string;
+  weight: number;
+  description: string;
+}
+
+export interface MatchDimension {
+  key: string;
+  label: string;
+  score: number;
+  maxScore: number;
+  icon: string;
+  color: string;
+}
+
+export interface ParallelMatchResult {
+  userId: string;
+  username: string;
+  avatar: string;
+  bio: string;
+  matchScore: number;
+  matchDimensions: MatchDimension[];
+  commonEmotions: string[];
+  commonRecipientTypes: string[];
+  recentLetterTitle: string | null;
+  recentLetterId: string | null;
+  activityLevel: 'active' | 'moderate' | 'quiet';
+  interactionHint: string;
+}
+
+export interface ParallelTopic {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  emotions: string[];
+  recipientTypes: string[];
+  letterCount: number;
+  participantCount: number;
+  relevanceScore: number;
+  relevanceReason: string;
+  sampleLetters: { id: string; title: string; senderName: string }[];
+}
+
+export interface ParallelMatchStats {
+  totalUsers: number;
+  matchedUsers: number;
+  totalTopics: number;
+  topMatchScore: number;
+  averageMatchScore: number;
+  emotionCoverage: number;
+  dimensionAverages: { key: string; label: string; average: number }[];
+}
+
+export interface ParallelMatchData {
+  recommendations: ParallelMatchResult[];
+  topics: ParallelTopic[];
+  stats: ParallelMatchStats;
+  matchRules: ParallelMatchRule[];
+}
+
+export interface ParallelMatchInteraction {
+  id: string;
+  fromUserId: string;
+  toUserId: string;
+  type: 'wave' | 'resonate' | 'invite';
+  message: string;
+  createdAt: string;
+}
+
+export interface SubmitInteractionData {
+  fromUserId: string;
+  toUserId: string;
+  type: 'wave' | 'resonate' | 'invite';
+  message?: string;
+}
+
 export interface RiskLevelInfo {
   key: string;
   level: number;
