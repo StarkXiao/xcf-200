@@ -859,10 +859,18 @@ export interface ParallelTopic {
   color: string;
   emotions: string[];
   recipientTypes: string[];
+  relatedThemes?: string[];
+  activityLevels?: string[];
   letterCount: number;
   participantCount: number;
   relevanceScore: number;
   relevanceReason: string;
+  matchDetails?: {
+    emotion: { score: number; overlap: string[] };
+    recipientType: { score: number; overlap: string[] };
+    theme: { score: number; overlap: string[] };
+    behavior: { score: number; activityMatched: boolean; letterVolumeMatched: boolean };
+  };
   sampleLetters: { id: string; title: string; senderName: string }[];
 }
 

@@ -48,7 +48,9 @@ const TOPIC_TEMPLATES = [
     icon: '🌟',
     color: '#FFD166',
     emotions: ['思念', '温暖', '怀念', '治愈'],
-    recipientTypes: ['past', 'parallel']
+    recipientTypes: ['past', 'parallel'],
+    relatedThemes: ['思念亲人', '感恩回忆', '孤独治愈'],
+    activityLevels: ['moderate', 'quiet']
   },
   {
     id: 'topic_braveheart',
@@ -57,7 +59,9 @@ const TOPIC_TEMPLATES = [
     icon: '🔥',
     color: '#E74C3C',
     emotions: ['勇气', '希望', '梦想'],
-    recipientTypes: ['future', 'parallel']
+    recipientTypes: ['future', 'parallel'],
+    relatedThemes: ['成长蜕变', '勇气冒险', '梦想追求'],
+    activityLevels: ['active', 'moderate']
   },
   {
     id: 'topic_loveletter',
@@ -66,7 +70,9 @@ const TOPIC_TEMPLATES = [
     icon: '💕',
     color: '#FF6B9D',
     emotions: ['爱情', '温暖', '幸福'],
-    recipientTypes: ['past', 'future', 'parallel']
+    recipientTypes: ['past', 'future', 'parallel'],
+    relatedThemes: ['爱情故事', '感恩回忆', '孤独治愈'],
+    activityLevels: ['active', 'moderate', 'quiet']
   },
   {
     id: 'topic_solitude',
@@ -75,7 +81,9 @@ const TOPIC_TEMPLATES = [
     icon: '🌙',
     color: '#34495E',
     emotions: ['孤独', '遗憾', '告别'],
-    recipientTypes: ['parallel', 'unknown']
+    recipientTypes: ['parallel', 'unknown'],
+    relatedThemes: ['孤独治愈', '告别释怀', '思念亲人'],
+    activityLevels: ['quiet', 'moderate']
   },
   {
     id: 'topic_dreamweaver',
@@ -84,7 +92,9 @@ const TOPIC_TEMPLATES = [
     icon: '☁️',
     color: '#64B5F6',
     emotions: ['梦想', '希望', '好奇'],
-    recipientTypes: ['future']
+    recipientTypes: ['future'],
+    relatedThemes: ['梦想追求', '成长蜕变', '勇气冒险'],
+    activityLevels: ['active', 'moderate']
   },
   {
     id: 'topic_healing_garden',
@@ -93,7 +103,9 @@ const TOPIC_TEMPLATES = [
     icon: '🌿',
     color: '#2ECC71',
     emotions: ['治愈', '温暖', '亲情'],
-    recipientTypes: ['past', 'parallel']
+    recipientTypes: ['past', 'parallel'],
+    relatedThemes: ['孤独治愈', '感恩回忆', '思念亲人'],
+    activityLevels: ['moderate', 'quiet', 'active']
   },
   {
     id: 'topic_mystery_box',
@@ -102,7 +114,9 @@ const TOPIC_TEMPLATES = [
     icon: '🌌',
     color: '#5E35B1',
     emotions: ['神秘', '好奇', '梦想'],
-    recipientTypes: ['unknown', 'parallel']
+    recipientTypes: ['unknown', 'parallel'],
+    relatedThemes: ['勇气冒险', '梦想追求', '成长蜕变'],
+    activityLevels: ['active', 'moderate']
   },
   {
     id: 'topic_timecapsule',
@@ -111,7 +125,9 @@ const TOPIC_TEMPLATES = [
     icon: '🕰️',
     color: '#A1887F',
     emotions: ['怀念', '思念', '遗憾', '告别'],
-    recipientTypes: ['past', 'future']
+    recipientTypes: ['past', 'future'],
+    relatedThemes: ['感恩回忆', '告别释怀', '思念亲人'],
+    activityLevels: ['quiet', 'moderate']
   }
 ];
 
@@ -423,6 +439,9 @@ function generateTopics(userId, limit = 6) {
 
   const userProfile = userId ? buildUserProfile(userId) : null;
 
+  const RECIPIENT_LABELS = { future: '未来', past: '过去', parallel: '平行世界', unknown: '未知' };
+  const ACTIVITY_LABELS = { active: '活跃', moderate: '温和', quiet: '宁静' };
+
   const topicsWithScores = TOPIC_TEMPLATES.map(template => {
     const matchingLetters = letterData.letters.filter(l => {
       const hasEmotion = (l.emotions || []).some(e => template.emotions.includes(e));
@@ -434,6 +453,13 @@ function generateTopics(userId, limit = 6) {
     let relevanceScore = 0;
     let relevanceReason = '';
 
+    const matchDetails = {
+      emotion: { score: 0, overlap: [] as string[] },
+      recipientType: { score: 0, overlap: [] as string[] },
+      theme: { score: 0, overlap: [] as string[] },
+      behavior: { score: 0, activityMatched: false, letterVolumeMatched: false }
+    };
+
     if (userProfile) {
       const emotionOverlap = template.emotions.filter(e =>
         userProfile.emotion.topEmotions.includes(e)
@@ -441,23 +467,66 @@ function generateTopics(userId, limit = 6) {
       const typeOverlap = template.recipientTypes.filter(t =>
         Object.keys(userProfile.behavior.recipientTypeCounts).includes(t)
       );
+      const themeOverlap = (template.relatedThemes || []).filter(t =>
+        userProfile.theme.topThemes.includes(t)
+      );
 
-      relevanceScore = emotionOverlap.length * 25 + typeOverlap.length * 15;
+      matchDetails.emotion.overlap = emotionOverlap;
+      matchDetails.emotion.score = emotionOverlap.length * 25;
 
-      if (emotionOverlap.length > 0 && typeOverlap.length > 0) {
-        relevanceReason = `匹配你的${emotionOverlap.join('、')}情感与${typeOverlap.map(t => {
-          const labels = { future: '未来', past: '过去', parallel: '平行世界', unknown: '未知' };
-          return labels[t] || t;
-        }).join('、')}偏好`;
-      } else if (emotionOverlap.length > 0) {
-        relevanceReason = `与你常用的${emotionOverlap.join('、')}情感共振`;
-      } else if (typeOverlap.length > 0) {
-        relevanceReason = `契合你的${typeOverlap.map(t => {
-          const labels = { future: '未来', past: '过去', parallel: '平行世界', unknown: '未知' };
-          return labels[t] || t;
-        }).join('、')}偏好`;
+      matchDetails.recipientType.overlap = typeOverlap;
+      matchDetails.recipientType.score = typeOverlap.length * 15;
+
+      matchDetails.theme.overlap = themeOverlap;
+      matchDetails.theme.score = themeOverlap.length * 20;
+
+      const activityMatch = (template.activityLevels || []).includes(userProfile.behavior.activityLevel);
+      matchDetails.behavior.activityMatched = activityMatch;
+      if (activityMatch) {
+        matchDetails.behavior.score += 10;
+      }
+
+      const userTotalLetters = userProfile.behavior.totalLetters;
+      const topicLetterDensity = matchingLetters.length;
+      if (userTotalLetters >= 3 && topicLetterDensity >= 2) {
+        matchDetails.behavior.score += 8;
+        matchDetails.behavior.letterVolumeMatched = true;
+      }
+
+      if (userProfile.behavior.totalReplies >= 2 && matchingLetters.some(l => !l.replies || l.replies.length < 3)) {
+        matchDetails.behavior.score += 5;
+      }
+
+      relevanceScore =
+        matchDetails.emotion.score +
+        matchDetails.recipientType.score +
+        matchDetails.theme.score +
+        matchDetails.behavior.score;
+
+      const reasonParts: string[] = [];
+      if (emotionOverlap.length > 0) {
+        reasonParts.push(`情感共振（${emotionOverlap.join('、')}）`);
+      }
+      if (themeOverlap.length > 0) {
+        reasonParts.push(`主题契合（${themeOverlap.join('、')}）`);
+      }
+      if (typeOverlap.length > 0) {
+        reasonParts.push(`收件偏好（${typeOverlap.map(t => RECIPIENT_LABELS[t as keyof typeof RECIPIENT_LABELS] || t).join('、')}）`);
+      }
+      if (activityMatch) {
+        reasonParts.push(`活跃度匹配（${ACTIVITY_LABELS[userProfile.behavior.activityLevel as keyof typeof ACTIVITY_LABELS] || userProfile.behavior.activityLevel}）`);
+      }
+
+      if (reasonParts.length >= 2) {
+        relevanceReason = reasonParts.slice(0, 3).join(' · ');
+      } else if (reasonParts.length === 1) {
+        relevanceReason = reasonParts[0];
       } else {
         relevanceReason = '探索新的情感维度，拓展你的星际视野';
+      }
+
+      if (relevanceScore === 0 && userTotalLetters < 3) {
+        relevanceReason = '多写几封信后，专题推荐会更加精准贴合你的风格';
       }
     } else {
       relevanceScore = matchingLetters.length * 5;
@@ -476,6 +545,7 @@ function generateTopics(userId, limit = 6) {
       participantCount: participantIds.size,
       relevanceScore,
       relevanceReason,
+      matchDetails,
       sampleLetters
     };
   });
