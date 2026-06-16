@@ -19,6 +19,7 @@ import { lettersApi } from '@/api/letters';
 import { activitiesApi } from '@/api/activities';
 import { favoritesApi, type GroupWithCount } from '@/api/favorites';
 import useAuthStore from '@/store/useAuthStore';
+import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
 import type { Letter, UserStats, Honor, FavoriteStats, FavoriteReminder, FavoriteGroup } from '@/types';
 import { formatDate, getRecipientTypeLabel, EXCEPTION_INFO } from '@/utils/helpers';
@@ -49,6 +50,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout, updateUser } = useAuthStore();
   const { showToast, setLoading } = useUIStore();
+  const favStore = useFavoriteStore();
 
   const [activeTab, setActiveTab] = useState<TabType>('letters');
   const [userLetters, setUserLetters] = useState<Letter[]>([]);
@@ -147,6 +149,7 @@ export default function Profile() {
 
   const handleLogout = () => {
     logout();
+    favStore.reset();
     showToast({ type: 'success', message: '下次再见啦，愿你星空常伴 ✨' });
     setTimeout(() => navigate('/login'), 500);
   };
@@ -167,6 +170,7 @@ export default function Profile() {
       }
       if (favStatsRes.success) setFavStats(favStatsRes.data);
       if (remindersRes.success) setReminders(remindersRes.data as ReminderWithLetter[]);
+      favStore.refreshAll(user.id);
     } catch (err) {
       console.error(err);
     }
@@ -522,6 +526,7 @@ export default function Profile() {
                           createdAt: letter.createdAt,
                         }}
                         index={index}
+                        showFavorite={false}
                       />
                     ))}
                   </div>
@@ -712,6 +717,7 @@ export default function Profile() {
                                   createdAt: letter.favoritedAt,
                                 }}
                                 index={index}
+                                showFavorite={false}
                               />
                             </div>
                           );

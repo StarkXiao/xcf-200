@@ -1,18 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PenLine, Search, Sparkles, TrendingUp, Clock, Filter } from 'lucide-react';
 import LetterCard from '@/components/Letter/LetterCard';
 import EmotionCloud from '@/components/Emotion/EmotionCloud';
+import SelectGroupModal from '@/components/Favorites/SelectGroupModal';
+import ReminderModal from '@/components/Favorites/ReminderModal';
+import GroupModal from '@/components/Favorites/GroupModal';
 import { lettersApi } from '@/api/letters';
-import type { LetterListItem } from '@/types';
+import { favoritesApi } from '@/api/favorites';
 import useAuthStore from '@/store/useAuthStore';
+import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
+import type { LetterListItem } from '@/types';
 
 type SortType = 'latest' | 'popular';
 
 export default function Plaza() {
-  const { isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const { showToast } = useUIStore();
+  const navigate = useNavigate();
+  const favStore = useFavoriteStore();
 
   const [letters, setLetters] = useState<LetterListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +30,18 @@ export default function Plaza() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+
+  const [showSelectGroup, setShowSelectGroup] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [pendingLetterId, setPendingLetterId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      favStore.initIfNeeded(user.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const fetchLetters = async (reset: boolean = false) => {
     try {
@@ -71,6 +90,91 @@ export default function Plaza() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
+
+  const handleFavoriteClick = (letterId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated || !user) {
+      showToast({ type: 'info', message: '请先登录才能收藏哦' });
+      setTimeout(() => navigate('/login'), 1000);
+      return;
+    }
+    if (favStore.isFavorited(letterId)) {
+      handleRemoveFavorite(letterId);
+    } else {
+      setPendingLetterId(letterId);
+      setShowSelectGroup(true);
+    }
+  };
+
+  const handleRemoveFavorite = async (letterId: string) => {
+    if (!user) return;
+    try {
+      const res = await favStore.removeFavorite(user.id, letterId);
+      if (res.success) {
+        showToast({ type: 'info', message: res.message });
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.message || '操作失败' });
+    }
+  };
+
+  const handleAddFavoriteToGroup = async (groupId: string | null) => {
+    if (!user || !pendingLetterId) return;
+    try {
+      const res = await favStore.addFavorite(user.id, pendingLetterId, groupId || undefined);
+      if (res.success) {
+        showToast({ type: 'success', message: res.message });
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.message || '收藏失败' });
+    }
+  };
+
+  const handleCreateGroupFromPlaza = async (data: { name: string; icon: string; color: string; description: string }) => {
+    if (!user) return;
+    try {
+      const res = await favoritesApi.createGroup(user.id, data);
+      if (res.success) {
+        showToast({ type: 'success', message: res.message });
+        favStore.refreshGroups(user.id);
+        setShowGroupModal(false);
+        setShowSelectGroup(true);
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.message || '创建失败' });
+    }
+  };
+
+  const handleReminderClick = (letterId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated || !user) {
+      showToast({ type: 'info', message: '请先登录才能设置提醒' });
+      return;
+    }
+    setPendingLetterId(letterId);
+    setShowReminderModal(true);
+  };
+
+  const handleSetReminder = async (data: { remindAt: string; note: string }) => {
+    if (!user || !pendingLetterId) return;
+    try {
+      const res = await favoritesApi.createReminder(user.id, {
+        letterId: pendingLetterId,
+        ...data,
+      });
+      if (res.success) {
+        showToast({ type: 'success', message: res.message });
+        setShowReminderModal(false);
+        setPendingLetterId(null);
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.message || '设置失败' });
+    }
+  };
+
+  const pendingLetter = letters.find((l) => l.id === pendingLetterId);
 
   return (
     <div className="relative z-10">
@@ -249,7 +353,13 @@ export default function Plaza() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
                 {letters.map((letter, index) => (
-                  <LetterCard key={letter.id} letter={letter} index={index} />
+                  <LetterCard
+                    key={letter.id}
+                    letter={letter}
+                    index={index}
+                    onFavoriteClick={handleFavoriteClick}
+                    onReminderClick={handleReminderClick}
+                  />
                 ))}
               </div>
 
@@ -278,6 +388,41 @@ export default function Plaza() {
           )}
         </div>
       </section>
+
+      <SelectGroupModal
+        open={showSelectGroup}
+        onClose={() => {
+          setShowSelectGroup(false);
+          setPendingLetterId(null);
+        }}
+        groups={favStore.groups}
+        ungroupedCount={favStore.ungroupedCount}
+        onSelect={(groupId) => {
+          handleAddFavoriteToGroup(groupId);
+          setShowSelectGroup(false);
+          setPendingLetterId(null);
+        }}
+        onCreateNew={() => {
+          setShowSelectGroup(false);
+          setShowGroupModal(true);
+        }}
+      />
+
+      <GroupModal
+        open={showGroupModal}
+        onClose={() => setShowGroupModal(false)}
+        onSubmit={handleCreateGroupFromPlaza}
+      />
+
+      <ReminderModal
+        open={showReminderModal}
+        onClose={() => {
+          setShowReminderModal(false);
+          setPendingLetterId(null);
+        }}
+        onSubmit={handleSetReminder}
+        letterTitle={pendingLetter?.title}
+      />
     </div>
   );
 }

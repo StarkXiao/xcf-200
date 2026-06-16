@@ -8,9 +8,9 @@ import SelectGroupModal from '@/components/Favorites/SelectGroupModal';
 import ReminderModal from '@/components/Favorites/ReminderModal';
 import GroupModal from '@/components/Favorites/GroupModal';
 import { lettersApi } from '@/api/letters';
-import { userApi } from '@/api/user';
 import { favoritesApi, type GroupWithCount } from '@/api/favorites';
 import useAuthStore from '@/store/useAuthStore';
+import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
 import type { Letter, Reply } from '@/types';
 
@@ -19,11 +19,11 @@ export default function LetterDetail() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
   const { showToast, setLoading } = useUIStore();
+  const favStore = useFavoriteStore();
 
   const [letter, setLetter] = useState<Letter | null>(null);
   const [loading, setLoadingLocal] = useState(true);
   const [likes, setLikes] = useState(0);
-  const [isFavorited, setIsFavorited] = useState(false);
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [replyName, setReplyName] = useState('');
@@ -33,9 +33,9 @@ export default function LetterDetail() {
   const [showSelectGroup, setShowSelectGroup] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
-  const [groups, setGroups] = useState<GroupWithCount[]>([]);
-  const [ungroupedCount, setUngroupedCount] = useState(0);
   const [favoriteGroupId, setFavoriteGroupId] = useState<string | null>(null);
+
+  const isFavorited = id ? favStore.isFavorited(id) : false;
 
   const emotions = ['温暖', '治愈', '希望', '思念', '神秘', '幸福', '勇气'];
 
@@ -58,26 +58,12 @@ export default function LetterDetail() {
     }
   };
 
-  const loadGroups = async () => {
-    if (!user) return;
-    try {
-      const res = await favoritesApi.getGroups(user.id);
-      if (res.success) {
-        setGroups(res.data);
-        setUngroupedCount(res.ungroupedCount);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const checkFavorite = async () => {
+  const loadFavoriteGroupId = async () => {
     if (!user || !id) return;
     try {
       const res = await favoritesApi.getFavoriteLetters(user.id);
       if (res.success) {
         const fav = res.data.find((l) => l.id === id);
-        setIsFavorited(!!fav);
         if (fav) {
           setFavoriteGroupId((fav as any).groupId || null);
         }
@@ -94,8 +80,8 @@ export default function LetterDetail() {
 
   useEffect(() => {
     if (user) {
-      checkFavorite();
-      loadGroups();
+      favStore.initIfNeeded(user.id);
+      loadFavoriteGroupId();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
@@ -122,7 +108,7 @@ export default function LetterDetail() {
     if (isFavorited) {
       handleRemoveFavorite();
     } else {
-      loadGroups();
+      favStore.refreshGroups(user.id);
       setShowSelectGroup(true);
     }
   };
@@ -130,9 +116,8 @@ export default function LetterDetail() {
   const handleRemoveFavorite = async () => {
     if (!user || !id) return;
     try {
-      const res = await userApi.removeFavorite(user.id, id);
+      const res = await favStore.removeFavorite(user.id, id);
       if (res.success) {
-        setIsFavorited(false);
         setFavoriteGroupId(null);
         showToast({ type: 'info', message: res.message });
       }
@@ -144,9 +129,8 @@ export default function LetterDetail() {
   const handleAddFavoriteToGroup = async (groupId: string | null) => {
     if (!user || !id) return;
     try {
-      const res = await userApi.addFavorite(user.id, id, groupId || undefined);
+      const res = await favStore.addFavorite(user.id, id, groupId || undefined);
       if (res.success) {
-        setIsFavorited(true);
         setFavoriteGroupId(groupId);
         showToast({ type: 'success', message: res.message });
       }
@@ -161,8 +145,9 @@ export default function LetterDetail() {
       const res = await favoritesApi.createGroup(user.id, data);
       if (res.success) {
         showToast({ type: 'success', message: res.message });
-        loadGroups();
+        favStore.refreshGroups(user.id);
         setShowGroupModal(false);
+        setShowSelectGroup(true);
       }
     } catch (err: any) {
       showToast({ type: 'error', message: err.response?.data?.message || '创建失败' });
@@ -306,7 +291,7 @@ export default function LetterDetail() {
                       title="移动到分组"
                     >
                       <option value="">📁 未分组</option>
-                      {groups.map((g) => (
+                      {favStore.groups.map((g) => (
                         <option key={g.id} value={g.id}>
                           {g.icon} {g.name}
                         </option>
@@ -455,8 +440,8 @@ export default function LetterDetail() {
       <SelectGroupModal
         open={showSelectGroup}
         onClose={() => setShowSelectGroup(false)}
-        groups={groups}
-        ungroupedCount={ungroupedCount}
+        groups={favStore.groups}
+        ungroupedCount={favStore.ungroupedCount}
         onSelect={(groupId) => {
           handleAddFavoriteToGroup(groupId);
           setShowSelectGroup(false);
