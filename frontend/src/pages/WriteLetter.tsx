@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Send, Eye, EyeOff, Sparkles, Feather, Target, Zap,
   Clock, Gauge, Calendar as CalendarIcon
@@ -21,14 +21,23 @@ const recipientTypes = [
 
 export default function WriteLetter() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated } = useAuthStore();
   const { showToast, setLoading } = useUIStore();
 
+  const templateState = location.state as {
+    emotion?: string;
+    templateContent?: string;
+    templateTitle?: string;
+  } | null;
+
   const [recipient, setRecipient] = useState('');
   const [recipientType, setRecipientType] = useState('future');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
+  const [title, setTitle] = useState(templateState?.templateTitle || '');
+  const [content, setContent] = useState(templateState?.templateContent || '');
+  const [selectedEmotions, setSelectedEmotions] = useState<string[]>(
+    templateState?.emotion ? [templateState.emotion] : []
+  );
   const [isPublic, setIsPublic] = useState(true);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [deliverySpeed, setDeliverySpeed] = useState<'standard' | 'express' | 'instant'>('standard');

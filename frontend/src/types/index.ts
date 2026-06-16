@@ -412,3 +412,75 @@ export interface SubmitReviewData {
   comment?: string;
   reviewerId?: string;
 }
+
+export interface EmotionAnalysisItem {
+  name: string;
+  color: string;
+  icon: string;
+  count: number;
+  percentage: number;
+  trend: 'up' | 'down' | 'stable';
+  trendValue: number;
+}
+
+export interface EmotionAnalysisData {
+  dominantEmotion: { name: string; color: string; icon: string; percentage: number } | null;
+  emotionDistribution: EmotionAnalysisItem[];
+  totalRecords: number;
+  recentEmotion: string | null;
+  emotionBalance: number;
+}
+
+export interface WritingTemplate {
+  id: string;
+  emotion: string;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  prompts: string[];
+  opening: string;
+  closing: string;
+  tips: string[];
+}
+
+export interface EmotionRecord {
+  id: string;
+  userId: string;
+  emotion: string;
+  intensity: number;
+  note: string;
+  createdAt: string;
+}
+
+export interface EmotionPhaseRecord {
+  period: string;
+  label: string;
+  startDate: string;
+  endDate: string;
+  dominantEmotion: string;
+  dominantEmotionColor: string;
+  dominantEmotionIcon: string;
+  recordCount: number;
+  emotionDistribution: { name: string; color: string; icon: string; count: number }[];
+  averageIntensity: number;
+}
+
+export interface EmotionTimelineData {
+  phases: EmotionPhaseRecord[];
+  totalRecords: number;
+  currentPhase: EmotionPhaseRecord | null;
+}
+
+export interface RecommendedLetter {
+  id: string;
+  title: string;
+  content: string;
+  senderName: string;
+  emotions: string[];
+  likes: number;
+  repliesCount: number;
+  createdAt: string;
+  recipientType: string;
+  matchReason: string;
+}
