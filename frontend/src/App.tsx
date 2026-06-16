@@ -14,6 +14,7 @@ import Emotions from '@/pages/Emotions';
 import Profile from '@/pages/Profile';
 import Archive from '@/pages/Archive';
 import StrangerReply from '@/pages/StrangerReply';
+import GuardianStation from '@/pages/GuardianStation';
 import HealingRoom from '@/pages/HealingRoom';
 import Community from '@/pages/Community';
 import ActivityDetail from '@/pages/ActivityDetail';
@@ -53,6 +54,7 @@ function Layout() {
           <Route path="/relation-network" element={<RelationNetwork />} />
           <Route path="/achievements" element={<AchievementCenter />} />
           <Route path="/stranger-reply" element={<StrangerReply />} />
+          <Route path="/guardian-station" element={<GuardianStation />} />
           <Route path="/healing" element={<HealingRoom />} />
           <Route path="/activities" element={<Community />} />
           <Route path="/activities/:id" element={<ActivityDetail />} />

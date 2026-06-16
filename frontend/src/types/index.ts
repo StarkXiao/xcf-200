@@ -817,3 +817,163 @@ export interface AchievementCenterData {
   badges: AchievementBadge[];
   levels: AchievementLevel[];
 }
+
+export type RiskLevel = 'safe' | 'mild' | 'moderate' | 'severe';
+
+export interface RiskLevelInfo {
+  key: string;
+  level: number;
+  label: string;
+  color: string;
+  description: string;
+}
+
+export interface RiskDetail {
+  category: string;
+  score: number;
+  keywords: string[];
+}
+
+export interface ContentAnalysisResult {
+  level: RiskLevel;
+  score: number;
+  details: RiskDetail[];
+  categories: string[];
+  levelInfo: RiskLevelInfo;
+}
+
+export interface ContentRating {
+  id: string;
+  targetId: string;
+  targetType: string;
+  riskLevel: RiskLevel;
+  riskScore: number;
+  riskCategories: string[];
+  details: RiskDetail[];
+  autoAnalyzed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ReviewStatus = 'pending' | 'approved' | 'rejected' | 'escalated';
+
+export interface ReplyReviewTask {
+  id: string;
+  letterId: string;
+  replyId: string;
+  riskLevel: RiskLevel;
+  status: ReviewStatus;
+  reviewerId?: string;
+  reviewReason?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  letterTitle: string;
+  replyContent: string;
+  replyEmotion: string;
+}
+
+export interface GuardianSubmitReviewData {
+  reviewId: string;
+  decision: 'approved' | 'rejected' | 'escalated';
+  reason?: string;
+  reviewerId: string;
+}
+
+export type InterventionType = 'system_tip' | 'peer_care' | 'resource_push' | 'human_intervention' | 'emergency';
+export type InterventionStatus = 'pending' | 'in_progress' | 'resolved' | 'closed';
+export type InterventionPriority = 'high' | 'medium' | 'low';
+
+export interface InterventionTypeInfo {
+  key: string;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+export interface InterventionRecord {
+  id: string;
+  type: string;
+  content: string;
+  operator: string;
+  createdAt: string;
+}
+
+export interface Intervention {
+  id: string;
+  targetId: string;
+  targetType: string;
+  letterId?: string;
+  riskLevel: RiskLevel;
+  riskScore?: number;
+  type: InterventionType;
+  status: InterventionStatus;
+  priority: InterventionPriority;
+  source?: string;
+  escalatedBy?: string;
+  records: InterventionRecord[];
+  createdAt: string;
+  updatedAt: string;
+  closedAt?: string;
+}
+
+export interface AddInterventionRecordData {
+  type: string;
+  content: string;
+  operatorId: string;
+  status?: InterventionStatus;
+  newType?: InterventionType;
+}
+
+export interface GuardianProfile {
+  userId: string;
+  totalReviews: number;
+  approvedCount: number;
+  rejectedCount: number;
+  escalatedCount: number;
+  totalInterventions: number;
+  level: string;
+  levelIcon: string;
+  joinedAt?: string;
+  lastActiveAt?: string;
+  isGuardian?: boolean;
+  nextLevelMin?: number;
+  levelProgress?: number;
+}
+
+export interface GuardianRankingItem {
+  rank: number;
+  userId: string;
+  username: string;
+  avatar: string;
+  totalReviews: number;
+  totalInterventions: number;
+  level: string;
+  levelIcon: string;
+  score: number;
+}
+
+export interface GuardianStationStats {
+  contentRatings: {
+    total: number;
+    byLevel: Record<RiskLevel, number>;
+  };
+  reviews: {
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+    escalated: number;
+  };
+  interventions: {
+    total: number;
+    pending: number;
+    in_progress: number;
+    resolved: number;
+    closed: number;
+    highPriority: number;
+  };
+  guardians: {
+    total: number;
+    activeToday: number;
+  };
+}
