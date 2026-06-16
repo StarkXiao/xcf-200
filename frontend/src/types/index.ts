@@ -176,3 +176,117 @@ export interface LetterFormData {
   deliverySpeed?: 'standard' | 'express' | 'instant';
   scheduledDeliveryAt?: string;
 }
+
+export interface ArchiveLetter extends LetterListItem {
+  senderId: string;
+  isPublic: boolean;
+}
+
+export interface ArchiveFilterEmotion extends Emotion {
+  archiveCount: number;
+}
+
+export interface ArchiveFilterRecipientType {
+  key: string;
+  label: string;
+  icon: string;
+  count: number;
+}
+
+export interface ArchiveFilters {
+  emotions: ArchiveFilterEmotion[];
+  recipientTypes: ArchiveFilterRecipientType[];
+  timePeriods: string[];
+  totalLetters: number;
+}
+
+export interface ArchiveTimelinePeriod {
+  key: string;
+  label: string;
+  order: number;
+  count: number;
+  letters: ArchiveLetter[];
+}
+
+export interface ArchiveQueryParams {
+  page?: number;
+  limit?: number;
+  emotion?: string | string[];
+  recipientType?: string | string[];
+  timePeriod?: string;
+  keyword?: string;
+  sort?: 'latest' | 'popular' | 'oldest';
+  scope?: 'public' | 'user' | 'favorites';
+  userId?: string;
+}
+
+export interface UserEmotionStat {
+  name: string;
+  count: number;
+  color: string;
+  icon: string;
+  percentage: number;
+}
+
+export interface UserRecipientStat {
+  key: string;
+  label: string;
+  icon: string;
+  count: number;
+  percentage: number;
+}
+
+export interface UserMonthlyTimeline {
+  month: string;
+  count: number;
+}
+
+export interface UserPersonaTag {
+  icon: string;
+  label: string;
+  desc: string;
+}
+
+export interface UserArchiveStats {
+  overview: {
+    totalLetters: number;
+    publicLetters: number;
+    privateLetters: number;
+    favoriteLetters: number;
+    totalLikes: number;
+    totalReplies: number;
+    avgEmotionsPerLetter: number;
+    replyRate: number;
+    lettersWithReplies: number;
+  };
+  topEmotions: UserEmotionStat[];
+  emotionStats: Record<string, number>;
+  recipientStats: UserRecipientStat[];
+  monthlyTimeline: UserMonthlyTimeline[];
+  timePeriodStats: Record<string, number>;
+  mostUsedRecipientType: { key: string; count: number } | null;
+  personaTags: UserPersonaTag[];
+  joinDate: string;
+}
+
+export interface TracebackEmotionDetail {
+  name: string;
+  color: string;
+  icon: string;
+  relatedCount: number;
+}
+
+export interface TracebackLetter extends ArchiveLetter {
+  sharedEmotions?: number;
+}
+
+export interface LetterTraceback {
+  currentLetter: ArchiveLetter;
+  emotionDetail: TracebackEmotionDetail[];
+  sameEmotionLetters: TracebackLetter[];
+  sameRecipientLetters: ArchiveLetter[];
+  sameSenderLetters: ArchiveLetter[];
+  samePeriodLetters: ArchiveLetter[];
+  periodInfo: { key: string; label: string; order: number; count: number };
+  recipientInfo: { key: string; label: string; icon: string; totalCount: number };
+}

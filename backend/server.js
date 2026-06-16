@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const letterRoutes = require('./routes/letters');
 const emotionRoutes = require('./routes/emotions');
 const userRoutes = require('./routes/user');
+const archiveRoutes = require('./routes/archive');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,6 +20,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/letters', letterRoutes);
 app.use('/api/emotions', emotionRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/archive', archiveRoutes);
 
 app.get('/api', (req, res) => {
   res.json({ 

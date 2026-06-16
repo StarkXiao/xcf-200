@@ -12,6 +12,7 @@ import WriteLetter from '@/pages/WriteLetter';
 import LetterDetail from '@/pages/LetterDetail';
 import Emotions from '@/pages/Emotions';
 import Profile from '@/pages/Profile';
+import Archive from '@/pages/Archive';
 import NotFound from '@/pages/NotFound';
 
 function ScrollToTop() {
@@ -39,6 +40,7 @@ function Layout() {
           <Route path="/letter/:id" element={<LetterDetail />} />
           <Route path="/emotions" element={<Emotions />} />
           <Route path="/emotions/:name" element={<Emotions />} />
+          <Route path="/archive" element={<Archive />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
