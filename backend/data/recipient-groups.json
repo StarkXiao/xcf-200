@@ -1,0 +1,49 @@
+{
+  "groups": [
+    {
+      "id": "group_001",
+      "userId": "user_001",
+      "name": "家人",
+      "icon": "🏠",
+      "color": "#f72585",
+      "description": "血浓于水的至亲",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "group_002",
+      "userId": "user_001",
+      "name": "挚友",
+      "icon": "🤝",
+      "color": "#4cc9f0",
+      "description": "人生难得的知己",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "group_003",
+      "userId": "user_001",
+      "name": "恋人",
+      "icon": "💕",
+      "color": "#ff7b00",
+      "description": "心中最特别的人",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "group_004",
+      "userId": "user_001",
+      "name": "自己",
+      "icon": "🌟",
+      "color": "#ffd166",
+      "description": "写给不同时空的自己",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "group_005",
+      "userId": "user_001",
+      "name": "师长",
+      "icon": "📚",
+      "color": "#06d6a0",
+      "description": "人生路上的引路人",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    }
+  ]
+}

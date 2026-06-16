@@ -697,3 +697,55 @@ export interface FutureMailboxStats {
     timeRemaining: TimeRemaining;
   }[];
 }
+
+export interface RecipientRelation {
+  id: string;
+  userId: string;
+  name: string;
+  groupId: string;
+  avatar: string;
+  note: string;
+  letterCount: number;
+  lastWrittenAt: string;
+  createdAt: string;
+}
+
+export interface RecipientGroup {
+  id: string;
+  userId: string;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface RecipientEmotionPreference {
+  recipientId: string;
+  emotion: string;
+  count: number;
+  lastUsedAt: string;
+}
+
+export interface FestivalSuggestion {
+  id: string;
+  festivalName: string;
+  festivalDate: string;
+  icon: string;
+  recipientGroups: string[];
+  suggestion: string;
+  recommendedEmotions: string[];
+  daysUntil: number;
+  isUrgent: boolean;
+}
+
+export interface RelationNetworkStats {
+  totalRecipients: number;
+  totalGroups: number;
+  topRecipients: (RecipientRelation & { group?: RecipientGroup })[];
+  recentRecipients: RecipientRelation[];
+  emotionPreferences: RecipientEmotionPreference[];
+  festivalSuggestions: FestivalSuggestion[];
+  groupDistribution: { group: RecipientGroup; count: number }[];
+  writingFrequency: { period: string; count: number }[];
+}

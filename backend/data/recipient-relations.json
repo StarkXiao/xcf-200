@@ -1,0 +1,92 @@
+{
+  "relations": [
+    {
+      "id": "relation_001",
+      "userId": "user_001",
+      "name": "未来的自己",
+      "groupId": "group_004",
+      "avatar": "🌟",
+      "note": "希望十年后的我还记得现在的梦想",
+      "letterCount": 12,
+      "lastWrittenAt": "2025-06-10T20:00:00.000Z",
+      "createdAt": "2025-01-15T00:00:00.000Z"
+    },
+    {
+      "id": "relation_002",
+      "userId": "user_001",
+      "name": "已故的外婆",
+      "groupId": "group_001",
+      "avatar": "👵",
+      "note": "外婆，我学会了做桂花糕",
+      "letterCount": 8,
+      "lastWrittenAt": "2025-05-20T15:30:00.000Z",
+      "createdAt": "2025-02-01T00:00:00.000Z"
+    },
+    {
+      "id": "relation_003",
+      "userId": "user_001",
+      "name": "平行世界的Ta",
+      "groupId": "group_003",
+      "avatar": "💕",
+      "note": "在另一个宇宙，我们是否在一起",
+      "letterCount": 15,
+      "lastWrittenAt": "2025-06-15T23:45:00.000Z",
+      "createdAt": "2025-03-01T00:00:00.000Z"
+    },
+    {
+      "id": "relation_004",
+      "userId": "user_001",
+      "name": "童年的玩伴小明",
+      "groupId": "group_002",
+      "avatar": "👦",
+      "note": "还记得那年夏天一起捉的蝉吗",
+      "letterCount": 5,
+      "lastWrittenAt": "2025-04-12T10:00:00.000Z",
+      "createdAt": "2025-02-20T00:00:00.000Z"
+    },
+    {
+      "id": "relation_005",
+      "userId": "user_001",
+      "name": "高中班主任",
+      "groupId": "group_005",
+      "avatar": "👨‍🏫",
+      "note": "老师，我终于活成了您期待的样子",
+      "letterCount": 3,
+      "lastWrittenAt": "2025-05-01T09:00:00.000Z",
+      "createdAt": "2025-03-15T00:00:00.000Z"
+    },
+    {
+      "id": "relation_006",
+      "userId": "user_001",
+      "name": "过去的自己",
+      "groupId": "group_004",
+      "avatar": "⏰",
+      "note": "想告诉那个迷茫的少年，一切都会好的",
+      "letterCount": 6,
+      "lastWrittenAt": "2025-06-01T14:00:00.000Z",
+      "createdAt": "2025-01-20T00:00:00.000Z"
+    },
+    {
+      "id": "relation_007",
+      "userId": "user_001",
+      "name": "五年后的自己",
+      "groupId": "group_004",
+      "avatar": "🚀",
+      "note": "那时候的我，是否已经实现了梦想？",
+      "letterCount": 4,
+      "lastWrittenAt": "2025-06-12T18:00:00.000Z",
+      "createdAt": "2025-02-10T00:00:00.000Z"
+    },
+    {
+      "id": "relation_008",
+      "userId": "user_001",
+      "name": "大学室友阿泽",
+      "groupId": "group_002",
+      "avatar": "🎮",
+      "note": "那些通宵开黑的日子，想起来还会笑",
+      "letterCount": 2,
+      "lastWrittenAt": "2025-03-20T22:00:00.000Z",
+      "createdAt": "2025-03-01T00:00:00.000Z"
+    }
+  ]
+}

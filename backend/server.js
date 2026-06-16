@@ -12,6 +12,7 @@ const strangerReplyRoutes = require('./routes/strangerReply');
 const healingRoutes = require('./routes/healing');
 const activityRoutes = require('./routes/activities');
 const futureMailboxRoutes = require('./routes/futureMailbox');
+const relationNetworkRoutes = require('./routes/relationNetwork');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,6 +30,7 @@ app.use('/api/stranger-reply', strangerReplyRoutes);
 app.use('/api/healing', healingRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/future-mailbox', futureMailboxRoutes);
+app.use('/api/relation-network', relationNetworkRoutes);
 
 app.get('/api', (req, res) => {
   res.json({ 

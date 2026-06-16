@@ -29,9 +29,10 @@ export default function WriteLetter() {
     emotion?: string;
     templateContent?: string;
     templateTitle?: string;
+    prefillRecipient?: string;
   } | null;
 
-  const [recipient, setRecipient] = useState('');
+  const [recipient, setRecipient] = useState(templateState?.prefillRecipient || '');
   const [recipientType, setRecipientType] = useState('future');
   const [title, setTitle] = useState(templateState?.templateTitle || '');
   const [content, setContent] = useState(templateState?.templateContent || '');
