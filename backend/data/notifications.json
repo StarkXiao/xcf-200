@@ -1,0 +1,14 @@
+{
+  "notifications": [
+    {
+      "id": "mqg20npysb5l37muy",
+      "userId": "user_001",
+      "type": "new_reply",
+      "title": "收到一封陌生回信 ✉️",
+      "content": "你的信《致十年后的我》收到了来自 ?? ???? 的回信",
+      "relatedId": "letter_001",
+      "read": false,
+      "createdAt": "2026-06-16T02:59:59.638Z"
+    }
+  ]
+}

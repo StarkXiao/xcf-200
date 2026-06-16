@@ -290,3 +290,125 @@ export interface LetterTraceback {
   periodInfo: { key: string; label: string; order: number; count: number };
   recipientInfo: { key: string; label: string; icon: string; totalCount: number };
 }
+
+export interface MatchDetail {
+  rule: string;
+  score: number;
+  reason: string;
+}
+
+export interface ReplyTask {
+  id: string;
+  letterId: string;
+  title: string;
+  content: string;
+  emotions: string[];
+  recipientType: string;
+  recipient: string;
+  senderName: string;
+  isAnonymous: boolean;
+  repliesCount: number;
+  createdAt: string;
+  matchScore: number;
+  matchDetails: MatchDetail[];
+  matchMaxScore: number;
+  replyDeadline: string | null;
+  rewardStars: number;
+}
+
+export interface MatchRule {
+  key: string;
+  label: string;
+  weight: number;
+}
+
+export interface AnonymousIdentity {
+  anonymousId: string;
+  anonymousName: string;
+}
+
+export interface ReplyReview {
+  rating: number;
+  tags: string[];
+  comment: string;
+  reviewerId: string | null;
+  createdAt: string;
+}
+
+export interface StrangerReply extends Reply {
+  isStrangerReply: boolean;
+  replierId: string | null;
+  anonymousId: string;
+  review: ReplyReview | null;
+}
+
+export interface ReplyReviewTags {
+  positive: string[];
+  negative: string[];
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  content: string;
+  relatedId: string | null;
+  read: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export interface ReplyLevel {
+  min: number;
+  name: string;
+  icon: string;
+}
+
+export interface ReplyLevelProgress {
+  current: number;
+  next: number | null;
+  progress: number;
+}
+
+export interface UserReplyStats {
+  totalReplies: number;
+  receivedReplies: number;
+  totalReviews: number;
+  averageRating: number;
+  level: ReplyLevel;
+  nextLevelProgress: ReplyLevelProgress;
+}
+
+export interface ReplyProfile {
+  userId: string;
+  preferredEmotions: string[];
+  preferredTypes: string[];
+  bio: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ReplyPoolFilters {
+  emotion?: string;
+  recipientType?: string;
+  needReply?: boolean;
+  limit?: number;
+  userId?: string;
+}
+
+export interface SubmitReplyData {
+  letterId: string;
+  content: string;
+  emotion?: string;
+  anonymousName?: string;
+  replierId?: string;
+}
+
+export interface SubmitReviewData {
+  replyId: string;
+  rating: number;
+  tags?: string[];
+  comment?: string;
+  reviewerId?: string;
+}
