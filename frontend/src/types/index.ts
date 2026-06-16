@@ -749,3 +749,71 @@ export interface RelationNetworkStats {
   groupDistribution: { group: RecipientGroup; count: number }[];
   writingFrequency: { period: string; count: number }[];
 }
+
+export type AchievementCategory = 'writing' | 'replying' | 'sharing' | 'emotion';
+
+export type AchievementTaskStatus = 'locked' | 'available' | 'in_progress' | 'completed';
+
+export interface AchievementTask {
+  id: string;
+  category: AchievementCategory;
+  title: string;
+  description: string;
+  icon: string;
+  targetValue: number;
+  currentValue: number;
+  status: AchievementTaskStatus;
+  rewardStars: number;
+  rewardBadgeId: string | null;
+  order: number;
+  prerequisiteTaskIds: string[];
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface AchievementBadge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: AchievementCategory;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  color: string;
+  earnedAt?: string;
+  isEarned: boolean;
+  relatedTaskId: string | null;
+}
+
+export interface AchievementLevel {
+  level: number;
+  title: string;
+  icon: string;
+  minStars: number;
+  maxStars: number;
+  color: string;
+}
+
+export interface AchievementUserProgress {
+  userId: string;
+  totalStars: number;
+  level: AchievementLevel;
+  nextLevel: AchievementLevel | null;
+  levelProgress: number;
+  completedTasks: number;
+  totalTasks: number;
+  earnedBadges: number;
+  totalBadges: number;
+  categoryStats: {
+    writing: { completed: number; total: number; stars: number };
+    replying: { completed: number; total: number; stars: number };
+    sharing: { completed: number; total: number; stars: number };
+    emotion: { completed: number; total: number; stars: number };
+  };
+}
+
+export interface AchievementCenterData {
+  userProgress: AchievementUserProgress;
+  tasks: AchievementTask[];
+  badges: AchievementBadge[];
+  levels: AchievementLevel[];
+}

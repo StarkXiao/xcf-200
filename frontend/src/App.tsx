@@ -20,6 +20,7 @@ import ActivityDetail from '@/pages/ActivityDetail';
 import WorkDetail from '@/pages/WorkDetail';
 import FutureMailbox from '@/pages/FutureMailbox';
 import RelationNetwork from '@/pages/RelationNetwork';
+import AchievementCenter from '@/pages/AchievementCenter';
 import NotFound from '@/pages/NotFound';
 
 function ScrollToTop() {
@@ -50,6 +51,7 @@ function Layout() {
           <Route path="/archive" element={<Archive />} />
           <Route path="/future-mailbox" element={<FutureMailbox />} />
           <Route path="/relation-network" element={<RelationNetwork />} />
+          <Route path="/achievements" element={<AchievementCenter />} />
           <Route path="/stranger-reply" element={<StrangerReply />} />
           <Route path="/healing" element={<HealingRoom />} />
           <Route path="/activities" element={<Community />} />

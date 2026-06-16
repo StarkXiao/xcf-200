@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Home, Tag, User, PenLine, LogOut, Menu, X, Sparkles, Archive, MessageSquareHeart, HeartPulse, Globe, Mailbox, Orbit } from 'lucide-react';
+import { Mail, Home, Tag, User, PenLine, LogOut, Menu, X, Sparkles, Archive, MessageSquareHeart, HeartPulse, Globe, Mailbox, Orbit, Trophy } from 'lucide-react';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
 import { cn } from '@/utils/helpers';
@@ -12,6 +12,7 @@ const navItems = [
   { path: '/future-mailbox', label: '未来信箱', icon: Mailbox },
   { path: '/activities', label: '星球社群', icon: Globe },
   { path: '/stranger-reply', label: '陌生回信', icon: MessageSquareHeart },
+  { path: '/achievements', label: '成就中心', icon: Trophy },
   { path: '/healing', label: '情绪疗愈室', icon: HeartPulse },
   { path: '/emotions', label: '情绪星河', icon: Tag },
   { path: '/archive', label: '星愿档案馆', icon: Archive },
