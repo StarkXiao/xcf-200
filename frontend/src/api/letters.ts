@@ -16,7 +16,11 @@ interface LettersQueryParams {
   limit?: number;
   emotion?: string;
   keyword?: string;
-  sort?: 'latest' | 'popular';
+  sort?: 'latest' | 'popular' | 'most_replied';
+  minLikes?: number;
+  timeRange?: 'today' | 'week' | 'month' | 'year';
+  recipientType?: string | string[];
+  replyStatus?: 'has_reply' | 'no_reply';
 }
 
 interface LiveTrackingData {

@@ -349,7 +349,7 @@ function buildTrackingInfo(letter) {
 }
 
 router.get('/', (req, res) => {
-  const { page = 1, limit = 10, emotion, keyword, sort = 'latest' } = req.query;
+  const { page = 1, limit = 10, emotion, keyword, sort = 'latest', minLikes, timeRange, recipientType, replyStatus } = req.query;
   const letterData = readJSON('letters.json') || { letters: [] };
 
   let letters = [...letterData.letters].filter(l => l.isPublic);
@@ -367,10 +367,58 @@ router.get('/', (req, res) => {
     );
   }
 
+  if (minLikes !== undefined) {
+    const min = parseInt(minLikes);
+    if (!isNaN(min)) {
+      letters = letters.filter(l => (l.likes || 0) >= min);
+    }
+  }
+
+  if (timeRange) {
+    const now = Date.now();
+    let startTime;
+    switch (timeRange) {
+      case 'today':
+        startTime = new Date();
+        startTime.setHours(0, 0, 0, 0);
+        startTime = startTime.getTime();
+        break;
+      case 'week':
+        startTime = now - 7 * 24 * 60 * 60 * 1000;
+        break;
+      case 'month':
+        startTime = now - 30 * 24 * 60 * 60 * 1000;
+        break;
+      case 'year':
+        startTime = now - 365 * 24 * 60 * 60 * 1000;
+        break;
+      default:
+        startTime = null;
+    }
+    if (startTime) {
+      letters = letters.filter(l => new Date(l.createdAt).getTime() >= startTime);
+    }
+  }
+
+  if (recipientType) {
+    const types = Array.isArray(recipientType) ? recipientType : [recipientType];
+    letters = letters.filter(l => types.includes(l.recipientType));
+  }
+
+  if (replyStatus) {
+    if (replyStatus === 'has_reply') {
+      letters = letters.filter(l => l.replies && l.replies.length > 0);
+    } else if (replyStatus === 'no_reply') {
+      letters = letters.filter(l => !l.replies || l.replies.length === 0);
+    }
+  }
+
   if (sort === 'latest') {
     letters.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   } else if (sort === 'popular') {
-    letters.sort((a, b) => b.likes - a.likes);
+    letters.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+  } else if (sort === 'most_replied') {
+    letters.sort((a, b) => ((b.replies ? b.replies.length : 0) - (a.replies ? a.replies.length : 0)));
   }
 
   const pageNum = parseInt(page);
@@ -386,7 +434,7 @@ router.get('/', (req, res) => {
     title: l.title,
     content: l.content.substring(0, 100) + (l.content.length > 100 ? '...' : ''),
     emotions: l.emotions,
-    likes: l.likes,
+    likes: l.likes || 0,
     repliesCount: l.replies ? l.replies.length : 0,
     createdAt: l.createdAt
   }));

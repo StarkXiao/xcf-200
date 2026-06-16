@@ -454,9 +454,9 @@ function generateTopics(userId, limit = 6) {
     let relevanceReason = '';
 
     const matchDetails = {
-      emotion: { score: 0, overlap: [] as string[] },
-      recipientType: { score: 0, overlap: [] as string[] },
-      theme: { score: 0, overlap: [] as string[] },
+      emotion: { score: 0, overlap: [] },
+      recipientType: { score: 0, overlap: [] },
+      theme: { score: 0, overlap: [] },
       behavior: { score: 0, activityMatched: false, letterVolumeMatched: false }
     };
 
@@ -503,7 +503,7 @@ function generateTopics(userId, limit = 6) {
         matchDetails.theme.score +
         matchDetails.behavior.score;
 
-      const reasonParts: string[] = [];
+      const reasonParts = [];
       if (emotionOverlap.length > 0) {
         reasonParts.push(`情感共振（${emotionOverlap.join('、')}）`);
       }
@@ -511,10 +511,10 @@ function generateTopics(userId, limit = 6) {
         reasonParts.push(`主题契合（${themeOverlap.join('、')}）`);
       }
       if (typeOverlap.length > 0) {
-        reasonParts.push(`收件偏好（${typeOverlap.map(t => RECIPIENT_LABELS[t as keyof typeof RECIPIENT_LABELS] || t).join('、')}）`);
+        reasonParts.push(`收件偏好（${typeOverlap.map(t => RECIPIENT_LABELS[t] || t).join('、')}）`);
       }
       if (activityMatch) {
-        reasonParts.push(`活跃度匹配（${ACTIVITY_LABELS[userProfile.behavior.activityLevel as keyof typeof ACTIVITY_LABELS] || userProfile.behavior.activityLevel}）`);
+        reasonParts.push(`活跃度匹配（${ACTIVITY_LABELS[userProfile.behavior.activityLevel] || userProfile.behavior.activityLevel}）`);
       }
 
       if (reasonParts.length >= 2) {
