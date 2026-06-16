@@ -1,5 +1,15 @@
 import api from '@/utils/api';
-import type { Letter, LetterListItem, Reply, PaginatedResponse, ApiResponse, LetterFormData } from '@/types';
+import type {
+  Letter,
+  LetterListItem,
+  Reply,
+  PaginatedResponse,
+  ApiResponse,
+  LetterFormData,
+  DeliveryTracking,
+  MailRouteStats,
+  CompensationType,
+} from '@/types';
 
 interface LettersQueryParams {
   page?: number;
@@ -7,6 +17,31 @@ interface LettersQueryParams {
   emotion?: string;
   keyword?: string;
   sort?: 'latest' | 'popular';
+}
+
+interface LiveTrackingData {
+  currentStage: string;
+  actualStage: string;
+  progress: number;
+  estimatedArrival: string;
+  hasActiveException: boolean;
+  isDelayed: boolean;
+  serverTime: string;
+}
+
+interface ExceptionLetterItem {
+  letterId: string;
+  title: string;
+  recipient: string;
+  recipientType: string;
+  createdAt: string;
+  tracking: {
+    currentStage: string;
+    exceptions: any[];
+    hasActiveException: boolean;
+    isDelayed: boolean;
+    estimatedArrival: string;
+  };
 }
 
 export const lettersApi = {
@@ -48,6 +83,43 @@ export const lettersApi = {
 
   getUserLetters: async (userId: string, type: 'sent' | 'replies' = 'sent'): Promise<ApiResponse<Letter[]>> => {
     const response = await api.get(`/letters/user/${userId}`, { params: { type } });
+    return response.data;
+  },
+
+  getTracking: async (letterId: string): Promise<ApiResponse<DeliveryTracking>> => {
+    const response = await api.get(`/letters/${letterId}/tracking`);
+    return response.data;
+  },
+
+  getLiveTracking: async (letterId: string): Promise<ApiResponse<LiveTrackingData>> => {
+    const response = await api.get(`/letters/${letterId}/tracking/live`);
+    return response.data;
+  },
+
+  compensateException: async (
+    letterId: string,
+    compensationType: CompensationType,
+    userId: string
+  ): Promise<ApiResponse<{ tracking: DeliveryTracking; letterId?: string }>> => {
+    const response = await api.post(`/letters/${letterId}/compensate`, {
+      compensationType,
+      userId,
+    });
+    return response.data;
+  },
+
+  advanceStage: async (letterId: string): Promise<ApiResponse<DeliveryTracking>> => {
+    const response = await api.post(`/letters/${letterId}/advance-stage`);
+    return response.data;
+  },
+
+  getMailRouteStats: async (userId: string): Promise<ApiResponse<MailRouteStats>> => {
+    const response = await api.get(`/letters/user/${userId}/mail-route-stats`);
+    return response.data;
+  },
+
+  getExceptionLetters: async (userId: string): Promise<ApiResponse<ExceptionLetterItem[]>> => {
+    const response = await api.get(`/letters/user/${userId}/exceptions`);
     return response.data;
   },
 };

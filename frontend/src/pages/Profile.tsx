@@ -2,16 +2,20 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Mail, Heart, Bookmark, Settings, Calendar, Sparkles, PenLine,
-  User as UserIcon, Edit3, LogOut, ChevronRight, FileText, MessageCircle
+  User as UserIcon, Edit3, LogOut, ChevronRight, FileText, MessageCircle,
+  Route, AlertTriangle, ExternalLink
 } from 'lucide-react';
 import LetterCard from '@/components/Letter/LetterCard';
+import MailRouteStatsCard from '@/components/MailRoute/MailRouteStatsCard';
+import MiniMailRouteStatus from '@/components/MailRoute/MiniMailRouteStatus';
 import { userApi } from '@/api/user';
+import { lettersApi } from '@/api/letters';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
 import type { Letter, UserStats } from '@/types';
-import { formatDate } from '@/utils/helpers';
+import { formatDate, getRecipientTypeLabel, EXCEPTION_INFO } from '@/utils/helpers';
 
-type TabType = 'letters' | 'favorites' | 'edit';
+type TabType = 'letters' | 'favorites' | 'mailroute' | 'edit';
 
 const avatarOptions = ['🌟', '🌙', '🌈', '🦋', '🌸', '🌊', '⭐', '🐱', '🦄', '🌻', '☕', '🎨', '🍀', '🌠', '🔮', '🌌'];
 
@@ -31,6 +35,7 @@ export default function Profile() {
   const [userLetters, setUserLetters] = useState<Letter[]>([]);
   const [favorites, setFavorites] = useState<Letter[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [exceptionLetters, setExceptionLetters] = useState<any[]>([]);
   const [loadingLocal, setLoadingLocal] = useState(true);
 
   const [editName, setEditName] = useState('');
@@ -54,14 +59,16 @@ export default function Profile() {
     if (!user) return;
     try {
       setLoadingLocal(true);
-      const [lettersRes, favRes, statsRes] = await Promise.all([
+      const [lettersRes, favRes, statsRes, excRes] = await Promise.all([
         userApi.getUserLetters(user.id),
         userApi.getFavorites(user.id),
         userApi.getStats(user.id),
+        lettersApi.getExceptionLetters(user.id),
       ]);
       if (lettersRes.success) setUserLetters(lettersRes.data);
       if (favRes.success) setFavorites(favRes.data);
       if (statsRes.success) setStats(statsRes.data);
+      if (excRes.success) setExceptionLetters(excRes.data);
     } catch (err) {
       showToast({ type: 'error', message: '加载数据失败' });
     } finally {
@@ -186,18 +193,21 @@ export default function Profile() {
           </div>
 
           <div className="lg:col-span-2 space-y-6">
-            <div className="glass-card p-1.5 inline-flex w-full">
+            <div className="glass-card p-1.5 inline-flex w-full flex-wrap">
               {[
                 { key: 'letters', label: '我写的信', icon: Mail },
+                { key: 'mailroute', label: '邮路追踪', icon: Route },
                 { key: 'favorites', label: '我的收藏', icon: Bookmark },
                 { key: 'edit', label: '编辑资料', icon: Settings },
               ].map((tab) => {
                 const TabIcon = tab.icon;
+                const showBadge = tab.key === 'mailroute' && exceptionLetters.filter(e => e.tracking?.hasActiveException).length > 0;
+                const badgeCount = exceptionLetters.filter(e => e.tracking?.hasActiveException).length;
                 return (
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key as TabType)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                    className={`relative flex-1 min-w-[100px] flex items-center justify-center gap-2 px-3 sm:px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                       activeTab === tab.key
                         ? 'bg-gradient-to-r from-cosmic-500/20 to-aurora/20 text-white shadow-inner'
                         : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -205,6 +215,11 @@ export default function Profile() {
                   >
                     <TabIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">{tab.label}</span>
+                    {showBadge && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-nebula-orange text-white text-[10px] font-bold flex items-center justify-center shadow-glow-sm">
+                        {badgeCount}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -321,6 +336,176 @@ export default function Profile() {
                         index={index}
                       />
                     ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'mailroute' && user && (
+              <div className="animate-fade-in space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif-sc text-xl font-semibold text-white flex items-center gap-2">
+                    <Route className="w-5 h-5 text-aurora" />
+                    时空邮路总览
+                  </h3>
+                  <button
+                    onClick={fetchAllData}
+                    className="btn-secondary py-2 px-4 text-sm flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    刷新数据
+                  </button>
+                </div>
+
+                <MailRouteStatsCard userId={user.id} />
+
+                <div className="glass-card p-5 sm:p-6">
+                  <h4 className="font-medium text-white mb-5 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-starlight" />
+                    所有信件传送进度
+                  </h4>
+                  {loadingLocal ? (
+                    <div className="space-y-3">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="h-24 bg-white/5 rounded-xl animate-pulse" />
+                      ))}
+                    </div>
+                  ) : userLetters.length === 0 ? (
+                    <div className="text-center py-10">
+                      <div className="text-4xl mb-3">✉️</div>
+                      <p className="text-white/60">还没有寄出任何信件</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {userLetters.map((letter) => {
+                        const recipientInfo = getRecipientTypeLabel(letter.recipientType);
+                        return (
+                          <div
+                            key={letter.id}
+                            className="p-4 sm:p-5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${recipientInfo.color}`}>
+                                        <span>{recipientInfo.icon}</span>
+                                        致{recipientInfo.label}的{letter.recipient}
+                                      </span>
+                                      <span className="text-xs text-white/40">
+                                        {formatDate(letter.createdAt)}
+                                      </span>
+                                    </div>
+                                    <h5 className="font-serif-sc font-semibold text-white truncate group-hover:text-aurora transition-colors">
+                                      {letter.title}
+                                    </h5>
+                                  </div>
+                                  <Link
+                                    to={`/letter/${letter.id}`}
+                                    className="shrink-0 p-2 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-aurora hover:border-aurora/40 hover:bg-aurora/10 transition-all"
+                                    title="查看详情"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                  </Link>
+                                </div>
+                                <MiniMailRouteStatus
+                                  letterId={letter.id}
+                                  createdAt={letter.createdAt}
+                                  estimatedArrival={letter.deliverAt}
+                                  showCountdown
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {exceptionLetters.length > 0 && (
+                  <div className="glass-card p-5 sm:p-6 border-2 border-nebula-orange/20">
+                    <h4 className="font-medium text-white mb-5 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-nebula-orange" />
+                      需要处理的异常信件
+                      <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-nebula-orange/20 text-nebula-orange">
+                        {exceptionLetters.filter(e => e.tracking?.hasActiveException).length} 封待处理
+                      </span>
+                    </h4>
+                    <div className="space-y-3">
+                      {exceptionLetters.map((letter) => {
+                        const activeExc = letter.tracking?.exceptions?.find((e: any) => !e.resolved);
+                        const excInfo = activeExc ? (EXCEPTION_INFO as any)[activeExc.type] : null;
+                        const recipientInfo = getRecipientTypeLabel(letter.recipientType);
+                        return (
+                          <div
+                            key={letter.letterId}
+                            className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                              letter.tracking?.hasActiveException
+                                ? 'bg-nebula-orange/8 border-nebula-orange/30'
+                                : 'bg-white/5 border-white/10'
+                            }`}
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${recipientInfo.color}`}>
+                                        <span>{recipientInfo.icon}</span>
+                                        {letter.recipient}
+                                      </span>
+                                      {letter.tracking?.hasActiveException ? (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-nebula-orange/20 text-nebula-orange font-medium">
+                                          <AlertTriangle className="w-3 h-3" />
+                                          {excInfo?.label || '异常中'}
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-nebula-mint/20 text-nebula-mint">
+                                          已处理
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h5 className="font-serif-sc font-semibold text-white truncate">
+                                      {letter.title}
+                                    </h5>
+                                  </div>
+                                  <Link
+                                    to={`/letter/${letter.letterId}`}
+                                    className={`shrink-0 py-2 px-4 rounded-xl text-sm font-medium flex items-center gap-1.5 transition-all ${
+                                      letter.tracking?.hasActiveException
+                                        ? 'bg-nebula-orange/15 border border-nebula-orange/40 text-nebula-orange hover:bg-nebula-orange/25'
+                                        : 'btn-secondary'
+                                    }`}
+                                  >
+                                    {letter.tracking?.hasActiveException ? (
+                                      <>
+                                        <Sparkles className="w-4 h-4" />
+                                        立即处理
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ExternalLink className="w-4 h-4" />
+                                        查看详情
+                                      </>
+                                    )}
+                                  </Link>
+                                </div>
+                                {activeExc && (
+                                  <div className="p-3 rounded-xl bg-nebula-orange/8 border border-nebula-orange/20">
+                                    <p className="text-sm text-nebula-orange/90 flex items-start gap-2">
+                                      <span className="text-base">{excInfo?.icon}</span>
+                                      <span>{activeExc.message}</span>
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>

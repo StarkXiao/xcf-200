@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Heart, BookmarkPlus, Bookmark, ArrowLeft, Send, MessageSquare, Sparkles, Share2 } from 'lucide-react';
 import LetterPaper from '@/components/Letter/LetterPaper';
 import ReplyCard from '@/components/Letter/ReplyCard';
+import MailRouteTracker from '@/components/MailRoute/MailRouteTracker';
 import { lettersApi } from '@/api/letters';
 import { userApi } from '@/api/user';
 import useAuthStore from '@/store/useAuthStore';
@@ -160,6 +161,12 @@ export default function LetterDetail() {
         <div className="animate-scale-in">
           <LetterPaper letter={letter} />
         </div>
+
+        {id && (
+          <div className="mt-8">
+            <MailRouteTracker letterId={id} />
+          </div>
+        )}
 
         <div className="mt-8 glass-card p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">

@@ -78,6 +78,7 @@ export default {
         'scale-in': 'scaleIn 0.3s ease-out',
         'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
         'typewriter': 'typewriter 3s steps(40) forwards',
+        'shimmer': 'shimmer 2s linear infinite',
       },
       keyframes: {
         twinkle: {
@@ -107,6 +108,10 @@ export default {
         pulseGlow: {
           '0%, 100%': { boxShadow: '0 0 12px rgba(255, 209, 102, 0.3)' },
           '50%': { boxShadow: '0 0 28px rgba(255, 209, 102, 0.6)' },
+        },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
         },
       },
     },

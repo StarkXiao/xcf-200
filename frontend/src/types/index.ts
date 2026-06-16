@@ -93,6 +93,78 @@ export interface AuthResponse {
   token?: string;
 }
 
+export interface UserStats {
+  totalLetters: number;
+  totalLikes: number;
+  totalReplies: number;
+  totalFavorites: number;
+  emotionStats: Record<string, number>;
+}
+
+export type DeliveryStage = 'created' | 'star_port' | 'time_tunnel' | 'parallel_gateway' | 'delivering' | 'delivered' | 'exception';
+export type ExceptionType = 'time_anomaly' | 'cosmic_storm' | 'recipient_lost' | 'unknown';
+export type CompensationType = 'accelerate' | 'reroute' | 'resend' | 'compensate_letter';
+
+export interface DeliveryStageInfo {
+  stage: DeliveryStage;
+  label: string;
+  description: string;
+  icon: string;
+  estimatedDuration: number;
+  color: string;
+}
+
+export interface DeliveryLog {
+  id: string;
+  stage: DeliveryStage;
+  timestamp: string;
+  message: string;
+  location?: string;
+  isException?: boolean;
+}
+
+export interface DeliveryException {
+  id: string;
+  type: ExceptionType;
+  stage: DeliveryStage;
+  message: string;
+  detectedAt: string;
+  resolved: boolean;
+  resolvedAt?: string;
+  resolution?: string;
+  availableCompensations: CompensationType[];
+}
+
+export interface DeliveryTracking {
+  letterId: string;
+  currentStage: DeliveryStage;
+  estimatedArrival: string;
+  createdAt: string;
+  deliveredAt?: string;
+  isDelayed: boolean;
+  progress: number;
+  logs: DeliveryLog[];
+  exceptions: DeliveryException[];
+  hasActiveException: boolean;
+}
+
+export interface CompensationOption {
+  type: CompensationType;
+  label: string;
+  description: string;
+  icon: string;
+  cost: number;
+}
+
+export interface MailRouteStats {
+  totalInTransit: number;
+  totalDelivered: number;
+  totalExceptions: number;
+  totalDelayed: number;
+  averageDeliveryTime: number;
+  stageDistribution: Record<DeliveryStage, number>;
+}
+
 export interface LetterFormData {
   recipient: string;
   recipientType: string;
@@ -101,12 +173,6 @@ export interface LetterFormData {
   emotions: string[];
   isPublic: boolean;
   isAnonymous: boolean;
-}
-
-export interface UserStats {
-  totalLetters: number;
-  totalLikes: number;
-  totalReplies: number;
-  totalFavorites: number;
-  emotionStats: Record<string, number>;
+  deliverySpeed?: 'standard' | 'express' | 'instant';
+  scheduledDeliveryAt?: string;
 }

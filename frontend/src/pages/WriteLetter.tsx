@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Eye, EyeOff, Sparkles, Feather, Target } from 'lucide-react';
+import {
+  Send, Eye, EyeOff, Sparkles, Feather, Target, Zap,
+  Clock, Gauge, Calendar as CalendarIcon
+} from 'lucide-react';
 import EmotionTag from '@/components/Emotion/EmotionTag';
 import { lettersApi } from '@/api/letters';
 import { emotionsApi } from '@/api/emotions';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
 import type { Emotion } from '@/types';
+import { getSpeedInfo } from '@/utils/helpers';
 
 const recipientTypes = [
   { value: 'future', label: '未来的人', icon: '🔮', desc: '给未来的自己或某人' },
@@ -27,9 +31,31 @@ export default function WriteLetter() {
   const [selectedEmotions, setSelectedEmotions] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(true);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [deliverySpeed, setDeliverySpeed] = useState<'standard' | 'express' | 'instant'>('standard');
+  const [scheduledDelivery, setScheduledDelivery] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
   const [emotions, setEmotions] = useState<Emotion[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const deliverySpeedOptions = [
+    {
+      value: 'standard' as const,
+      ...getSpeedInfo('standard'),
+      recommend: true,
+    },
+    {
+      value: 'express' as const,
+      ...getSpeedInfo('express'),
+      recommend: false,
+    },
+    {
+      value: 'instant' as const,
+      ...getSpeedInfo('instant'),
+      recommend: false,
+    },
+  ];
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -73,6 +99,18 @@ export default function WriteLetter() {
   const handleSubmit = async () => {
     if (!validate() || !user) return;
 
+    let scheduledDeliveryAt: string | undefined;
+    if (scheduledDelivery && scheduledDate && scheduledTime) {
+      scheduledDeliveryAt = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
+      if (new Date(scheduledDeliveryAt).getTime() < Date.now()) {
+        setErrors(prev => ({
+          ...prev,
+          scheduled: '定时送达时间必须晚于当前时间',
+        }));
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       const res = await lettersApi.createLetter(user.id, user.username, {
@@ -83,6 +121,8 @@ export default function WriteLetter() {
         emotions: selectedEmotions,
         isPublic,
         isAnonymous,
+        deliverySpeed,
+        scheduledDeliveryAt,
       });
       if (res.success && res.data) {
         showToast({ type: 'success', message: res.message || '信件已成功寄出！' });
@@ -172,6 +212,121 @@ export default function WriteLetter() {
                     <div className="text-xs text-white/50 leading-relaxed">{type.desc}</div>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="glass-card p-5 sm:p-7">
+              <div className="flex items-center gap-2 mb-5">
+                <Gauge className="w-5 h-5 text-starlight" />
+                <h3 className="font-serif-sc text-lg font-semibold text-white">时空投递设置</h3>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-white/80 mb-3 flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-starlight" />
+                  选择投递速度
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {deliverySpeedOptions.map((option) => {
+                    const isSelected = deliverySpeed === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setDeliverySpeed(option.value)}
+                        className={`p-4 rounded-xl border-2 text-left transition-all duration-300 relative ${
+                          isSelected
+                            ? 'border-starlight/60 bg-starlight/10 shadow-glow-sm'
+                            : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
+                        }`}
+                      >
+                        {option.recommend && (
+                          <span className="absolute -top-2 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold bg-starlight/20 text-starlight border border-starlight/40">
+                            推荐
+                          </span>
+                        )}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">{option.icon}</span>
+                          <span className={`font-semibold text-sm ${
+                            isSelected ? 'text-starlight' : 'text-white'
+                          }`}>
+                            {option.label}
+                          </span>
+                        </div>
+                        <p className="text-xs text-white/50 mb-2 leading-relaxed">
+                          {option.description}
+                        </p>
+                        <div className={`text-xs font-medium flex items-center gap-1 ${
+                          isSelected ? 'text-starlight' : 'text-white/60'
+                        }`}>
+                          <Clock className="w-3 h-3" />
+                          {option.timeText}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-5 border-t border-white/10">
+                <label className="flex items-start gap-3 cursor-pointer mb-4">
+                  <input
+                    type="checkbox"
+                    checked={scheduledDelivery}
+                    onChange={(e) => setScheduledDelivery(e.target.checked)}
+                    className="w-5 h-5 mt-0.5 rounded border-cosmic-300 text-aurora focus:ring-aurora bg-white/20"
+                  />
+                  <div>
+                    <div className="text-sm font-medium text-white flex items-center gap-2">
+                      <CalendarIcon className="w-4 h-4 text-aurora" />
+                      定时送达
+                      <span className="text-xs text-white/40 font-normal">(可选)</span>
+                    </div>
+                    <p className="text-xs text-white/50 mt-0.5">
+                      选择一个特定的时间让信件送达收件人手中
+                    </p>
+                  </div>
+                </label>
+
+                {scheduledDelivery && (
+                  <div className="ml-8 space-y-4 animate-fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-white/60 mb-1.5">送达日期</label>
+                        <input
+                          type="date"
+                          value={scheduledDate}
+                          onChange={(e) => setScheduledDate(e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white placeholder-white/30 focus:outline-none focus:border-aurora focus:ring-2 focus:ring-aurora/20 transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-white/60 mb-1.5">送达时间</label>
+                        <input
+                          type="time"
+                          value={scheduledTime}
+                          onChange={(e) => setScheduledTime(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-white placeholder-white/30 focus:outline-none focus:border-aurora focus:ring-2 focus:ring-aurora/20 transition-all"
+                        />
+                      </div>
+                    </div>
+                    {errors.scheduled && (
+                      <p className="text-xs text-red-400">{errors.scheduled}</p>
+                    )}
+                    {scheduledDate && scheduledTime && !errors.scheduled && (
+                      <div className="p-3 rounded-xl bg-aurora/10 border border-aurora/20">
+                        <p className="text-xs text-aurora flex items-start gap-2">
+                          <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          <span>
+                            信件将于 <strong>{new Date(`${scheduledDate}T${scheduledTime}`).toLocaleString('zh-CN')}</strong> 准时送达。
+                            在此之前，信件会在时光邮局中静静等待。
+                          </span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
