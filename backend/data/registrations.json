@@ -1,0 +1,56 @@
+{
+  "registrations": [
+    {
+      "id": "reg_001",
+      "activityId": "act_001",
+      "userId": "user_001",
+      "username": "星尘旅人",
+      "userAvatar": "🌟",
+      "status": "approved",
+      "applyReason": "热爱写作，希望在星河中找到共鸣",
+      "reviewer": "system",
+      "reviewComment": "欢迎参与，期待你的作品！",
+      "reviewedAt": "2026-06-02T10:00:00.000Z",
+      "submittedWorks": 2,
+      "createdAt": "2026-06-01T15:30:00.000Z"
+    },
+    {
+      "id": "reg_002",
+      "activityId": "act_001",
+      "userId": "user_002",
+      "username": "月光诗人",
+      "userAvatar": "🌙",
+      "status": "approved",
+      "applyReason": "想用文字描绘心中的星河",
+      "reviewer": "system",
+      "reviewComment": "期待你的诗意表达",
+      "reviewedAt": "2026-06-03T14:00:00.000Z",
+      "submittedWorks": 1,
+      "createdAt": "2026-06-02T10:20:00.000Z"
+    },
+    {
+      "id": "reg_003",
+      "activityId": "act_001",
+      "userId": "user_003",
+      "username": "宇宙漫游者",
+      "userAvatar": "🚀",
+      "status": "pending",
+      "applyReason": "第一次参加写作活动，想挑战自己",
+      "createdAt": "2026-06-16T09:00:00.000Z"
+    },
+    {
+      "id": "reg_004",
+      "activityId": "act_003",
+      "userId": "user_001",
+      "username": "星尘旅人",
+      "userAvatar": "🌟",
+      "status": "approved",
+      "applyReason": "平行世界的主题很吸引我",
+      "reviewer": "system",
+      "reviewComment": "已通过，期待精彩创作",
+      "reviewedAt": "2026-04-05T11:00:00.000Z",
+      "submittedWorks": 1,
+      "createdAt": "2026-04-02T16:00:00.000Z"
+    }
+  ]
+}

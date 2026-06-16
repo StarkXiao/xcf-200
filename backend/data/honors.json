@@ -1,0 +1,46 @@
+{
+  "honors": [
+    {
+      "id": "honor_001",
+      "userId": "user_001",
+      "activityId": "act_003",
+      "activityTitle": "平行世界·另一个我的故事",
+      "honorTitle": "维度作家",
+      "rank": 1,
+      "rankTitle": "维度探索者",
+      "workId": "work_004",
+      "workTitle": "镜像人生",
+      "description": "在'平行世界'主题征文中获得第一名",
+      "badge": "🏆",
+      "awardedAt": "2026-06-05T10:00:00.000Z"
+    },
+    {
+      "id": "honor_002",
+      "userId": "user_002",
+      "activityId": "act_003",
+      "activityTitle": "平行世界·另一个我的故事",
+      "honorTitle": "优秀创作者",
+      "rank": 5,
+      "rankTitle": "优秀作品",
+      "workId": "work_004",
+      "workTitle": "平行世界的我",
+      "description": "在'平行世界'主题征文中获得第五名",
+      "badge": "⭐",
+      "awardedAt": "2026-06-05T10:00:00.000Z"
+    },
+    {
+      "id": "honor_003",
+      "userId": "user_001",
+      "activityId": "act_001",
+      "activityTitle": "星河梦境·第一届主题征文大赛",
+      "honorTitle": "参与奖",
+      "rank": null,
+      "rankTitle": "参赛纪念",
+      "workId": null,
+      "workTitle": null,
+      "description": "参与'星河梦境'主题征文活动",
+      "badge": "🎖️",
+      "awardedAt": "2026-06-01T10:00:00.000Z"
+    }
+  ]
+}

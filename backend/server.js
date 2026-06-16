@@ -10,6 +10,7 @@ const userRoutes = require('./routes/user');
 const archiveRoutes = require('./routes/archive');
 const strangerReplyRoutes = require('./routes/strangerReply');
 const healingRoutes = require('./routes/healing');
+const activityRoutes = require('./routes/activities');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,6 +26,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/archive', archiveRoutes);
 app.use('/api/stranger-reply', strangerReplyRoutes);
 app.use('/api/healing', healingRoutes);
+app.use('/api/activities', activityRoutes);
 
 app.get('/api', (req, res) => {
   res.json({ 

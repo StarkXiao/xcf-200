@@ -484,3 +484,121 @@ export interface RecommendedLetter {
   recipientType: string;
   matchReason: string;
 }
+
+export interface ActivityPrize {
+  rank: number;
+  title: string;
+  honor: string;
+  description: string;
+}
+
+export interface Activity {
+  id: string;
+  title: string;
+  description: string;
+  theme: string;
+  coverImage: string;
+  status: 'upcoming' | 'active' | 'voting' | 'settled';
+  registrationStart: string;
+  registrationEnd: string;
+  submissionStart: string;
+  submissionEnd: string;
+  votingStart: string;
+  votingEnd: string;
+  settlementDate: string;
+  createdAt: string;
+  createdBy: string;
+  participantCount: number;
+  workCount: number;
+  totalLikes: number;
+  prizes: ActivityPrize[];
+  rules: string[];
+  currentStage?: string;
+  stageLabel?: string;
+}
+
+export interface Registration {
+  id: string;
+  activityId: string;
+  userId: string;
+  username: string;
+  userAvatar: string;
+  status: 'pending' | 'approved' | 'rejected';
+  applyReason: string;
+  reviewer?: string;
+  reviewComment?: string;
+  reviewedAt?: string;
+  submittedWorks: number;
+  createdAt: string;
+}
+
+export interface Work {
+  id: string;
+  activityId: string;
+  registrationId: string;
+  userId: string;
+  username: string;
+  userAvatar: string;
+  title: string;
+  content: string;
+  emotions: string[];
+  wordCount: number;
+  status: 'pending' | 'published' | 'rejected';
+  likes: number;
+  views: number;
+  rank: number | null;
+  isAnonymous: boolean;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+}
+
+export interface WorkLike {
+  id: string;
+  workId: string;
+  userId: string;
+  createdAt: string;
+}
+
+export interface Honor {
+  id: string;
+  userId: string;
+  activityId: string;
+  activityTitle: string;
+  honorTitle: string;
+  rank: number | null;
+  rankTitle: string;
+  workId: string | null;
+  workTitle: string | null;
+  description: string;
+  badge: string;
+  awardedAt: string;
+}
+
+export interface ActivityStats {
+  totalParticipants: number;
+  totalWorks: number;
+  totalLikes: number;
+  topWorks: Work[];
+  myWorks?: Work[];
+  myRegistration?: Registration;
+}
+
+export interface RankingItem {
+  rank: number;
+  workId: string;
+  title: string;
+  username: string;
+  userAvatar: string;
+  likes: number;
+  views: number;
+  isAnonymous: boolean;
+}
+
+export interface SubmitWorkData {
+  activityId: string;
+  title: string;
+  content: string;
+  emotions: string[];
+  isAnonymous: boolean;
+}

@@ -1,0 +1,28 @@
+{
+  "workLikes": [
+    {
+      "id": "like_001",
+      "workId": "work_001",
+      "userId": "user_002",
+      "createdAt": "2026-06-19T10:00:00.000Z"
+    },
+    {
+      "id": "like_002",
+      "workId": "work_001",
+      "userId": "user_003",
+      "createdAt": "2026-06-19T15:30:00.000Z"
+    },
+    {
+      "id": "like_003",
+      "workId": "work_002",
+      "userId": "user_001",
+      "createdAt": "2026-06-21T09:00:00.000Z"
+    },
+    {
+      "id": "like_004",
+      "workId": "work_004",
+      "userId": "user_002",
+      "createdAt": "2026-05-11T14:00:00.000Z"
+    }
+  ]
+}

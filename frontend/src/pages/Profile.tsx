@@ -3,19 +3,21 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   Mail, Heart, Bookmark, Settings, Calendar, Sparkles, PenLine,
   User as UserIcon, Edit3, LogOut, ChevronRight, FileText, MessageCircle,
-  Route, AlertTriangle, ExternalLink
+  Route, AlertTriangle, ExternalLink, Award, Trophy
 } from 'lucide-react';
 import LetterCard from '@/components/Letter/LetterCard';
 import MailRouteStatsCard from '@/components/MailRoute/MailRouteStatsCard';
 import MiniMailRouteStatus from '@/components/MailRoute/MiniMailRouteStatus';
+import HonorCard from '@/components/Activity/HonorCard';
 import { userApi } from '@/api/user';
 import { lettersApi } from '@/api/letters';
+import { activitiesApi } from '@/api/activities';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
-import type { Letter, UserStats } from '@/types';
+import type { Letter, UserStats, Honor } from '@/types';
 import { formatDate, getRecipientTypeLabel, EXCEPTION_INFO } from '@/utils/helpers';
 
-type TabType = 'letters' | 'favorites' | 'mailroute' | 'edit';
+type TabType = 'letters' | 'favorites' | 'mailroute' | 'honors' | 'edit';
 
 const avatarOptions = ['🌟', '🌙', '🌈', '🦋', '🌸', '🌊', '⭐', '🐱', '🦄', '🌻', '☕', '🎨', '🍀', '🌠', '🔮', '🌌'];
 
@@ -36,6 +38,7 @@ export default function Profile() {
   const [favorites, setFavorites] = useState<Letter[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [exceptionLetters, setExceptionLetters] = useState<any[]>([]);
+  const [honors, setHonors] = useState<Honor[]>([]);
   const [loadingLocal, setLoadingLocal] = useState(true);
 
   const [editName, setEditName] = useState('');
@@ -59,16 +62,18 @@ export default function Profile() {
     if (!user) return;
     try {
       setLoadingLocal(true);
-      const [lettersRes, favRes, statsRes, excRes] = await Promise.all([
+      const [lettersRes, favRes, statsRes, excRes, honorsRes] = await Promise.all([
         userApi.getUserLetters(user.id),
         userApi.getFavorites(user.id),
         userApi.getStats(user.id),
         lettersApi.getExceptionLetters(user.id),
+        activitiesApi.getUserHonors(user.id),
       ]);
       if (lettersRes.success) setUserLetters(lettersRes.data);
       if (favRes.success) setFavorites(favRes.data);
       if (statsRes.success) setStats(statsRes.data);
       if (excRes.success) setExceptionLetters(excRes.data);
+      if (honorsRes.data.success) setHonors(honorsRes.data.data || []);
     } catch (err) {
       showToast({ type: 'error', message: '加载数据失败' });
     } finally {
@@ -198,11 +203,13 @@ export default function Profile() {
                 { key: 'letters', label: '我写的信', icon: Mail },
                 { key: 'mailroute', label: '邮路追踪', icon: Route },
                 { key: 'favorites', label: '我的收藏', icon: Bookmark },
+                { key: 'honors', label: '我的荣誉', icon: Trophy },
                 { key: 'edit', label: '编辑资料', icon: Settings },
               ].map((tab) => {
                 const TabIcon = tab.icon;
                 const showBadge = tab.key === 'mailroute' && exceptionLetters.filter(e => e.tracking?.hasActiveException).length > 0;
                 const badgeCount = exceptionLetters.filter(e => e.tracking?.hasActiveException).length;
+                const honorsBadge = tab.key === 'honors' && honors.length > 0;
                 return (
                   <button
                     key={tab.key}
@@ -218,6 +225,11 @@ export default function Profile() {
                     {showBadge && (
                       <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-nebula-orange text-white text-[10px] font-bold flex items-center justify-center shadow-glow-sm">
                         {badgeCount}
+                      </span>
+                    )}
+                    {honorsBadge && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shadow-glow-sm">
+                        {honors.length}
                       </span>
                     )}
                   </button>
@@ -335,6 +347,55 @@ export default function Profile() {
                         }}
                         index={index}
                       />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'honors' && (
+              <div className="animate-fade-in">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-serif-sc text-xl font-semibold text-white flex items-center gap-2">
+                    <Award className="w-5 h-5 text-aurora" />
+                    我的荣誉殿堂
+                    <span className="text-sm font-normal text-white/50">
+                      ({honors.length} 项荣誉)
+                    </span>
+                  </h3>
+                  <Link
+                    to="/activities"
+                    className="btn-secondary py-2 px-4 text-sm flex items-center gap-1.5"
+                  >
+                    <Trophy className="w-4 h-4" />
+                    参与活动
+                  </Link>
+                </div>
+
+                {loadingLocal ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="h-32 rounded-2xl bg-white/5 animate-pulse" />
+                    ))}
+                  </div>
+                ) : honors.length === 0 ? (
+                  <div className="glass-card p-12 sm:p-16 text-center">
+                    <div className="text-5xl mb-4">🏆</div>
+                    <p className="text-lg text-white/70 font-serif-sc mb-2">
+                      还没有获得任何荣誉...
+                    </p>
+                    <p className="text-sm text-white/50 mb-6">
+                      参与星球社群的主题征文活动，赢取属于你的荣誉
+                    </p>
+                    <Link to="/activities" className="btn-primary inline-flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      去参加活动
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {honors.map((honor) => (
+                      <HonorCard key={honor.id} honor={honor} />
                     ))}
                   </div>
                 )}

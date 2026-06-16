@@ -1,0 +1,137 @@
+{
+  "activities": [
+    {
+      "id": "act_001",
+      "title": "星河梦境·第一届主题征文大赛",
+      "description": "在浩瀚星海中，每一个梦境都是一颗闪烁的星。以'星河梦境'为主题，写下你心中最璀璨的故事。我们相信，文字的力量能穿越时空，照亮每一个孤独的灵魂。",
+      "theme": "星河梦境",
+      "coverImage": "🌌",
+      "status": "active",
+      "registrationStart": "2026-06-01T00:00:00.000Z",
+      "registrationEnd": "2026-06-30T23:59:59.000Z",
+      "submissionStart": "2026-06-15T00:00:00.000Z",
+      "submissionEnd": "2026-07-15T23:59:59.000Z",
+      "votingStart": "2026-07-16T00:00:00.000Z",
+      "votingEnd": "2026-07-31T23:59:59.000Z",
+      "settlementDate": "2026-08-05T00:00:00.000Z",
+      "createdAt": "2026-05-20T10:00:00.000Z",
+      "createdBy": "system",
+      "participantCount": 128,
+      "workCount": 89,
+      "totalLikes": 2345,
+      "prizes": [
+        {
+          "rank": 1,
+          "title": "银河之星",
+          "honor": "银河作家",
+          "description": "一等奖，获得专属荣誉徽章和星河纪念册"
+        },
+        {
+          "rank": 2,
+          "title": "星云之冠",
+          "honor": "星云作家",
+          "description": "二等奖，获得荣誉徽章和星光笔记本"
+        },
+        {
+          "rank": 3,
+          "title": "星辉之耀",
+          "honor": "星辉作家",
+          "description": "三等奖，获得荣誉徽章和星尘明信片"
+        },
+        {
+          "rank": 10,
+          "title": "星芒闪耀",
+          "honor": "优秀创作者",
+          "description": "优秀奖（Top 10），获得荣誉证书"
+        }
+      ],
+      "rules": [
+        "作品需围绕'星河梦境'主题创作",
+        "体裁不限，字数建议在500-5000字",
+        "作品必须为原创，不得抄袭",
+        "每位参赛者限提交3篇作品",
+        "禁止涉及敏感内容"
+      ]
+    },
+    {
+      "id": "act_002",
+      "title": "时光信笺·写给未来的自己",
+      "description": "穿越时空的对话，给未来的自己写一封信。五年后的你，会是什么样子？是否还保持着当初的梦想？用文字跨越时间的长河，与未来的自己相遇。",
+      "theme": "时光信笺",
+      "coverImage": "⏳",
+      "status": "upcoming",
+      "registrationStart": "2026-07-01T00:00:00.000Z",
+      "registrationEnd": "2026-07-31T23:59:59.000Z",
+      "submissionStart": "2026-07-15T00:00:00.000Z",
+      "submissionEnd": "2026-08-31T23:59:59.000Z",
+      "votingStart": "2026-09-01T00:00:00.000Z",
+      "votingEnd": "2026-09-15T23:59:59.000Z",
+      "settlementDate": "2026-09-20T00:00:00.000Z",
+      "createdAt": "2026-06-10T10:00:00.000Z",
+      "createdBy": "system",
+      "participantCount": 0,
+      "workCount": 0,
+      "totalLikes": 0,
+      "prizes": [
+        {
+          "rank": 1,
+          "title": "时光守望者",
+          "honor": "时光信使",
+          "description": "一等奖，获得时光沙漏纪念章"
+        },
+        {
+          "rank": 3,
+          "title": "岁月编织者",
+          "honor": "岁月写手",
+          "description": "二等奖，获得岁月手账本"
+        },
+        {
+          "rank": 10,
+          "title": "时光旅人",
+          "honor": "时光记录者",
+          "description": "优秀奖，获得时光明信片套装"
+        }
+      ],
+      "rules": [
+        "以'给未来的自己'为主题",
+        "可以是信件、散文、诗歌等形式",
+        "建议字数300-2000字",
+        "内容需积极向上，展现对未来的期许"
+      ]
+    },
+    {
+      "id": "act_003",
+      "title": "平行世界·另一个我的故事",
+      "description": "在某个平行宇宙中，或许存在着另一个你。TA可能过着截然不同的生活，有着不一样的经历。发挥你的想象，写下平行世界中另一个自己的故事。",
+      "theme": "平行世界",
+      "coverImage": "🪞",
+      "status": "settled",
+      "registrationStart": "2026-04-01T00:00:00.000Z",
+      "registrationEnd": "2026-04-30T23:59:59.000Z",
+      "submissionStart": "2026-04-15T00:00:00.000Z",
+      "submissionEnd": "2026-05-15T23:59:59.000Z",
+      "votingStart": "2026-05-16T00:00:00.000Z",
+      "votingEnd": "2026-05-31T23:59:59.000Z",
+      "settlementDate": "2026-06-05T00:00:00.000Z",
+      "createdAt": "2026-03-20T10:00:00.000Z",
+      "createdBy": "system",
+      "participantCount": 256,
+      "workCount": 198,
+      "totalLikes": 8765,
+      "prizes": [
+        {
+          "rank": 1,
+          "title": "维度探索者",
+          "honor": "维度作家",
+          "description": "一等奖，获得多维空间水晶摆件"
+        }
+      ],
+      "rules": [
+        "围绕'平行世界'主题创作",
+        "需包含平行世界的设定和另一个我的故事",
+        "体裁以小说为主，建议字数1000-8000字",
+        "鼓励创新的世界观设定"
+      ]
+    }
+  ]
+}
