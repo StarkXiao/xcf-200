@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Heart, BookmarkPlus, Bookmark, ArrowLeft, Send, MessageSquare, Sparkles, Share2 } from 'lucide-react';
+import { Heart, BookmarkPlus, Bookmark, ArrowLeft, Send, MessageSquare, Sparkles, Share2, Bell, FolderOpen } from 'lucide-react';
 import LetterPaper from '@/components/Letter/LetterPaper';
 import ReplyCard from '@/components/Letter/ReplyCard';
 import MailRouteTracker from '@/components/MailRoute/MailRouteTracker';
+import SelectGroupModal from '@/components/Favorites/SelectGroupModal';
+import ReminderModal from '@/components/Favorites/ReminderModal';
+import GroupModal from '@/components/Favorites/GroupModal';
 import { lettersApi } from '@/api/letters';
 import { userApi } from '@/api/user';
+import { favoritesApi, type GroupWithCount } from '@/api/favorites';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
 import type { Letter, Reply } from '@/types';
@@ -25,6 +29,13 @@ export default function LetterDetail() {
   const [replyName, setReplyName] = useState('');
   const [replyEmotion, setReplyEmotion] = useState('温暖');
   const [submittingReply, setSubmittingReply] = useState(false);
+
+  const [showSelectGroup, setShowSelectGroup] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [groups, setGroups] = useState<GroupWithCount[]>([]);
+  const [ungroupedCount, setUngroupedCount] = useState(0);
+  const [favoriteGroupId, setFavoriteGroupId] = useState<string | null>(null);
 
   const emotions = ['温暖', '治愈', '希望', '思念', '神秘', '幸福', '勇气'];
 
@@ -47,12 +58,29 @@ export default function LetterDetail() {
     }
   };
 
+  const loadGroups = async () => {
+    if (!user) return;
+    try {
+      const res = await favoritesApi.getGroups(user.id);
+      if (res.success) {
+        setGroups(res.data);
+        setUngroupedCount(res.ungroupedCount);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const checkFavorite = async () => {
     if (!user || !id) return;
     try {
-      const res = await userApi.getFavorites(user.id);
+      const res = await favoritesApi.getFavoriteLetters(user.id);
       if (res.success) {
-        setIsFavorited(res.data.some((l) => l.id === id));
+        const fav = res.data.find((l) => l.id === id);
+        setIsFavorited(!!fav);
+        if (fav) {
+          setFavoriteGroupId((fav as any).groupId || null);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -65,7 +93,10 @@ export default function LetterDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (user) checkFavorite();
+    if (user) {
+      checkFavorite();
+      loadGroups();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -82,25 +113,85 @@ export default function LetterDetail() {
     }
   };
 
-  const handleFavorite = async () => {
+  const handleFavoriteClick = () => {
     if (!isAuthenticated || !user || !id) {
       showToast({ type: 'info', message: '请先登录才能收藏哦' });
       setTimeout(() => navigate('/login'), 1000);
       return;
     }
+    if (isFavorited) {
+      handleRemoveFavorite();
+    } else {
+      loadGroups();
+      setShowSelectGroup(true);
+    }
+  };
+
+  const handleRemoveFavorite = async () => {
+    if (!user || !id) return;
     try {
-      if (isFavorited) {
-        const res = await userApi.removeFavorite(user.id, id);
-        if (res.success) {
-          setIsFavorited(false);
-          showToast({ type: 'info', message: res.message });
-        }
-      } else {
-        const res = await userApi.addFavorite(user.id, id);
-        if (res.success) {
-          setIsFavorited(true);
-          showToast({ type: 'success', message: res.message });
-        }
+      const res = await userApi.removeFavorite(user.id, id);
+      if (res.success) {
+        setIsFavorited(false);
+        setFavoriteGroupId(null);
+        showToast({ type: 'info', message: res.message });
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.message || '操作失败' });
+    }
+  };
+
+  const handleAddFavoriteToGroup = async (groupId: string | null) => {
+    if (!user || !id) return;
+    try {
+      const res = await userApi.addFavorite(user.id, id, groupId || undefined);
+      if (res.success) {
+        setIsFavorited(true);
+        setFavoriteGroupId(groupId);
+        showToast({ type: 'success', message: res.message });
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.message || '操作失败' });
+    }
+  };
+
+  const handleCreateGroupFromDetail = async (data: { name: string; icon: string; color: string; description: string }) => {
+    if (!user) return;
+    try {
+      const res = await favoritesApi.createGroup(user.id, data);
+      if (res.success) {
+        showToast({ type: 'success', message: res.message });
+        loadGroups();
+        setShowGroupModal(false);
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.message || '创建失败' });
+    }
+  };
+
+  const handleSetReminder = async (data: { remindAt: string; note: string }) => {
+    if (!user || !id) return;
+    try {
+      const res = await favoritesApi.createReminder(user.id, {
+        letterId: id,
+        ...data,
+      });
+      if (res.success) {
+        showToast({ type: 'success', message: res.message });
+        setShowReminderModal(false);
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.message || '设置失败' });
+    }
+  };
+
+  const handleMoveToGroup = async (groupId: string | null) => {
+    if (!user || !id) return;
+    try {
+      const res = await favoritesApi.moveFavorites(user.id, [id], groupId);
+      if (res.success) {
+        showToast({ type: 'success', message: res.message });
+        setFavoriteGroupId(groupId);
       }
     } catch (err: any) {
       showToast({ type: 'error', message: err.response?.data?.message || '操作失败' });
@@ -187,23 +278,51 @@ export default function LetterDetail() {
                 <span className="font-medium text-aurora">{letter.replies?.length || 0}</span>
               </button>
 
-              <button
-                onClick={handleFavorite}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
-                  isFavorited
-                    ? 'bg-starlight/20 border-starlight/40'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10'
-                }`}
-              >
-                {isFavorited ? (
-                  <Bookmark className="w-5 h-5 text-starlight fill-starlight" />
-                ) : (
-                  <BookmarkPlus className="w-5 h-5 text-white/70" />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleFavoriteClick}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
+                    isFavorited
+                      ? 'bg-starlight/20 border-starlight/40'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  {isFavorited ? (
+                    <Bookmark className="w-5 h-5 text-starlight fill-starlight" />
+                  ) : (
+                    <BookmarkPlus className="w-5 h-5 text-white/70" />
+                  )}
+                  <span className={`font-medium ${isFavorited ? 'text-starlight' : 'text-white/70'}`}>
+                    {isFavorited ? '已收藏' : '收藏'}
+                  </span>
+                </button>
+
+                {isFavorited && (
+                  <>
+                    <select
+                      value={favoriteGroupId || ''}
+                      onChange={(e) => handleMoveToGroup(e.target.value || null)}
+                      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/70 focus:outline-none focus:border-aurora/50"
+                      title="移动到分组"
+                    >
+                      <option value="">📁 未分组</option>
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.icon} {g.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      onClick={() => setShowReminderModal(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-nebula-orange/15 hover:border-nebula-orange/30 transition-all text-white/70 hover:text-nebula-orange"
+                      title="设置回看提醒"
+                    >
+                      <Bell className="w-5 h-5" />
+                    </button>
+                  </>
                 )}
-                <span className={`font-medium ${isFavorited ? 'text-starlight' : 'text-white/70'}`}>
-                  {isFavorited ? '已收藏' : '收藏'}
-                </span>
-              </button>
+              </div>
             </div>
 
             <button
@@ -332,6 +451,34 @@ export default function LetterDetail() {
           </Link>
         </div>
       </div>
+
+      <SelectGroupModal
+        open={showSelectGroup}
+        onClose={() => setShowSelectGroup(false)}
+        groups={groups}
+        ungroupedCount={ungroupedCount}
+        onSelect={(groupId) => {
+          handleAddFavoriteToGroup(groupId);
+          setShowSelectGroup(false);
+        }}
+        onCreateNew={() => {
+          setShowSelectGroup(false);
+          setShowGroupModal(true);
+        }}
+      />
+
+      <GroupModal
+        open={showGroupModal}
+        onClose={() => setShowGroupModal(false)}
+        onSubmit={handleCreateGroupFromDetail}
+      />
+
+      <ReminderModal
+        open={showReminderModal}
+        onClose={() => setShowReminderModal(false)}
+        onSubmit={handleSetReminder}
+        letterTitle={letter?.title}
+      />
     </div>
   );
 }

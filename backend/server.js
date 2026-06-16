@@ -16,6 +16,7 @@ const relationNetworkRoutes = require('./routes/relationNetwork');
 const achievementRoutes = require('./routes/achievements');
 const guardianStationRoutes = require('./routes/guardianStation');
 const parallelMatchRoutes = require('./routes/parallelMatch');
+const favoritesRoutes = require('./routes/favorites');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -37,6 +38,7 @@ app.use('/api/relation-network', relationNetworkRoutes);
 app.use('/api/achievements', achievementRoutes);
 app.use('/api/guardian-station', guardianStationRoutes);
 app.use('/api/parallel-match', parallelMatchRoutes);
+app.use('/api/favorites', favoritesRoutes);
 
 app.get('/api', (req, res) => {
   res.json({ 

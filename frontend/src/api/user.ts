@@ -32,8 +32,8 @@ export const userApi = {
     return response.data;
   },
 
-  addFavorite: async (userId: string, letterId: string): Promise<{ success: boolean; message: string }> => {
-    const response = await api.post(`/user/${userId}/favorites/${letterId}`);
+  addFavorite: async (userId: string, letterId: string, groupId?: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post(`/user/${userId}/favorites/${letterId}`, { groupId });
     return response.data;
   },
 

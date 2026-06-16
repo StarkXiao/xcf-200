@@ -57,11 +57,48 @@ export interface Emotion {
   count: number;
 }
 
+export interface FavoriteGroup {
+  id: string;
+  userId: string;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+  createdAt: string;
+  isDefault?: boolean;
+}
+
+export interface FavoriteReminder {
+  id: string;
+  userId: string;
+  letterId: string;
+  remindAt: string;
+  note?: string;
+  completed: boolean;
+  createdAt: string;
+  completedAt?: string;
+}
+
 export interface Favorite {
   id: string;
   userId: string;
   letterId: string;
+  groupId: string | null;
   createdAt: string;
+  favoritedAt: string;
+}
+
+export interface FavoriteStats {
+  totalFavorites: number;
+  totalGroups: number;
+  totalReminders: number;
+  pendingReminders: number;
+  completedReminders: number;
+  groupDistribution: { groupId: string; groupName: string; count: number }[];
+  emotionDistribution: Record<string, number>;
+  monthlyCollection: { month: string; count: number }[];
+  weeklyReviewCount: number;
+  lastReviewAt: string | null;
 }
 
 export interface ToastMessage {

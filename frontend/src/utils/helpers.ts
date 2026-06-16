@@ -309,3 +309,33 @@ export function truncateText(text: string, maxLength: number): string {
 export function generateToastId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
+
+export function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = date.getTime() - now.getTime();
+  const absDiff = Math.abs(diff);
+  const isFuture = diff > 0;
+
+  const minutes = Math.floor(absDiff / (1000 * 60));
+  const hours = Math.floor(absDiff / (1000 * 60 * 60));
+  const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+
+  if (isFuture) {
+    if (minutes < 1) return '即将到来';
+    if (minutes < 60) return `${minutes} 分钟后`;
+    if (hours < 24) return `${hours} 小时后`;
+    if (days < 7) return `${days} 天后`;
+    if (weeks < 5) return `${weeks} 周后`;
+    return `${months} 个月后`;
+  } else {
+    if (minutes < 1) return '刚刚';
+    if (minutes < 60) return `${minutes} 分钟前`;
+    if (hours < 24) return `${hours} 小时前`;
+    if (days < 7) return `${days} 天前`;
+    if (weeks < 5) return `${weeks} 周前`;
+    return `${months} 个月前`;
+  }
+}

@@ -106,6 +106,7 @@ router.get('/:userId/favorites', (req, res) => {
 
 router.post('/:userId/favorites/:letterId', (req, res) => {
   const { userId, letterId } = req.params;
+  const { groupId } = req.body || {};
   const favData = readJSON('favorites.json') || { favorites: [] };
 
   const existing = favData.favorites.find(f => f.userId === userId && f.letterId === letterId);
@@ -113,11 +114,14 @@ router.post('/:userId/favorites/:letterId', (req, res) => {
     return res.status(400).json({ success: false, message: '该信件已收藏' });
   }
 
+  const now = new Date().toISOString();
   favData.favorites.push({
     id: generateId(),
     userId,
     letterId,
-    createdAt: new Date().toISOString()
+    groupId: groupId || null,
+    createdAt: now,
+    favoritedAt: now
   });
 
   writeJSON('favorites.json', favData);
