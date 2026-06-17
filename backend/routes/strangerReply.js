@@ -354,6 +354,7 @@ router.post('/reply', (req, res) => {
     content,
     emotion: emotion || '温暖',
     isStrangerReply: true,
+    source: 'stranger',
     review: null,
     createdAt: new Date().toISOString()
   };

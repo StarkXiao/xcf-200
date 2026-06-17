@@ -1,3 +1,28 @@
 {
-  "versions": []
+  "versions": [
+    {
+      "id": "mqhhbsgiw5ydv1xij",
+      "draftId": "mqhh9pua2qpu7uxha",
+      "version": 1,
+      "snapshot": {
+        "recipient": "未来的自己",
+        "recipientType": "future",
+        "title": "超时补位测试信件",
+        "content": "这是一封用于测试超时补位机制的信件。如果5分钟内没有人工回复，系统应该自动发送质量最高的AI候选回复。让我们验证人工优先策略的完整流程！",
+        "emotions": [
+          "希望",
+          "温暖"
+        ],
+        "isPublic": true,
+        "isAnonymous": false,
+        "deliverySpeed": "standard",
+        "scheduledDelivery": false,
+        "scheduledDate": "",
+        "scheduledTime": ""
+      },
+      "note": "手动保存",
+      "createdBy": "user_001",
+      "createdAt": "2026-06-17T02:56:19.410Z"
+    }
+  ]
 }

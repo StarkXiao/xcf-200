@@ -185,28 +185,189 @@ const EXCEPTION_TYPES = [
   { type: 'unknown', label: '未知异常', message: '遇到了未知的时空异常，正在紧急排查' },
 ];
 
-function generateAutoReply(letter) {
-  const replies = [
+const REPLY_CANDIDATE_TIMEOUT = 5 * 60 * 1000;
+
+function generateReplyCandidates(letter) {
+  const emotion = letter.emotions?.[0] || '温暖';
+  const title = letter.title || '';
+  const contentSnippet = letter.content?.substring(0, 50) || '';
+
+  const candidateTemplates = [
     {
-      fromParallel: 'star_messenger_' + Math.floor(Math.random() * 100),
+      fromParallel: 'star_messenger',
       senderName: '星光信使',
-      content: `你的信已被银河邮局收录，编号 #${Math.floor(Math.random() * 999999)}。它将穿越时空，安全送达收件人手中。`,
-      emotion: '神秘'
+      content: `你的信《${title}》已被银河邮局收录，编号 #${Math.floor(Math.random() * 999999)}。它将穿越时空，安全送达收件人手中。愿这份心意在星河里闪耀 ✨`,
+      emotion: '神秘',
+      qualityScore: 85
     },
     {
-      fromParallel: 'echo_world_' + Math.floor(Math.random() * 100),
+      fromParallel: 'echo_world',
       senderName: '世界回声',
-      content: `在某个平行时空里，有人收到了你的心意，并回以同样的温暖。思念永远不会被辜负。`,
-      emotion: '温暖'
+      content: `在某个平行时空里，有人正阅读着你的文字——"${contentSnippet}..."，并回以同样的温暖。思念永远不会被辜负，你并不孤单 🌙`,
+      emotion: '温暖',
+      qualityScore: 90
     },
     {
-      fromParallel: 'time_traveler_' + Math.floor(Math.random() * 100),
+      fromParallel: 'time_traveler',
       senderName: '时光旅人',
-      content: `我是穿梭在时间长河里的旅者，偶然遇见了你的信。我会把它小心护送到目的地，放心。`,
-      emotion: '希望'
+      content: `我是穿梭在时间长河里的旅者，偶然遇见了你的信。字里行间的${emotion}让我驻足。我会把它小心护送到目的地，请放心。`,
+      emotion: '希望',
+      qualityScore: 88
+    },
+    {
+      fromParallel: 'cosmic_witness',
+      senderName: '宇宙见证者',
+      content: `星河里每一粒尘埃都在倾听你的心事。关于《${title}》，宇宙说："一切都会好起来的。"这不是安慰，是预言 🌟`,
+      emotion: '治愈',
+      qualityScore: 92
+    },
+    {
+      fromParallel: 'parallel_friend',
+      senderName: '平行世界的朋友',
+      content: `嘿，另一个时空的你好吗？读着你的信，仿佛看到了另一个自己。无论你正在经历什么，请相信：在某个平行世界里，我们都过得很好 💫`,
+      emotion: '思念',
+      qualityScore: 87
     }
   ];
-  return replies[Math.floor(Math.random() * replies.length)];
+
+  return candidateTemplates.map((tpl, idx) => ({
+    id: generateId(),
+    letterId: letter.id,
+    candidateIndex: idx,
+    fromParallel: `${tpl.fromParallel}_${Math.floor(Math.random() * 1000)}`,
+    senderName: tpl.senderName,
+    content: tpl.content,
+    emotion: tpl.emotion,
+    qualityScore: tpl.qualityScore,
+    status: 'pending',
+    source: 'ai_generated',
+    createdAt: new Date().toISOString()
+  }));
+}
+
+function initializeReplyCandidates(letter) {
+  const candidates = generateReplyCandidates(letter);
+  const candidateData = readJSON('replyCandidates.json') || { candidates: [] };
+  candidateData.candidates.push(...candidates);
+  writeJSON('replyCandidates.json', candidateData);
+
+  const poolData = readJSON('replyCandidatePools.json') || { pools: [] };
+  const pool = {
+    id: generateId(),
+    letterId: letter.id,
+    timeoutAt: new Date(Date.now() + REPLY_CANDIDATE_TIMEOUT).toISOString(),
+    status: 'waiting_human',
+    selectedCandidateId: null,
+    createdAt: new Date().toISOString()
+  };
+  poolData.pools.push(pool);
+  writeJSON('replyCandidatePools.json', poolData);
+
+  return { candidates, pool };
+}
+
+function getReplyCandidatePool(letterId) {
+  const poolData = readJSON('replyCandidatePools.json') || { pools: [] };
+  const candidateData = readJSON('replyCandidates.json') || { candidates: [] };
+
+  const pool = poolData.pools.find(p => p.letterId === letterId);
+  if (!pool) return null;
+
+  const candidates = candidateData.candidates.filter(c => c.letterId === letterId);
+  return { pool, candidates };
+}
+
+function getReplyCandidatePoolData(letterId) {
+  const letterData = readJSON('letters.json') || { letters: [] };
+  const letter = letterData.letters.find(l => l.id === letterId);
+  if (!letter) return null;
+
+  checkAndApplyTimeoutFallback(letter);
+
+  const poolInfo = getReplyCandidatePool(letterId);
+  if (!poolInfo) return null;
+
+  const { pool, candidates } = poolInfo;
+  const hasHumanReply = letter.replies?.some(r => r.source === 'human' || r.isStrangerReply);
+  const remainingTime = Math.max(0, new Date(pool.timeoutAt).getTime() - Date.now());
+
+  return {
+    pool,
+    candidates,
+    remainingTime,
+    hasHumanReply
+  };
+}
+
+function checkAndApplyTimeoutFallback(letter) {
+  const poolInfo = getReplyCandidatePool(letter.id);
+  if (!poolInfo) return false;
+
+  const { pool, candidates } = poolInfo;
+
+  if (pool.status !== 'waiting_human') return false;
+
+  const hasHumanReply = letter.replies?.some(r => r.source === 'human' || r.isStrangerReply);
+  if (hasHumanReply) {
+    pool.status = 'human_replied';
+    const poolData = readJSON('replyCandidatePools.json') || { pools: [] };
+    const idx = poolData.pools.findIndex(p => p.id === pool.id);
+    if (idx !== -1) {
+      poolData.pools[idx] = { ...pool, updatedAt: new Date().toISOString() };
+      writeJSON('replyCandidatePools.json', poolData);
+    }
+    return false;
+  }
+
+  const now = Date.now();
+  const timeoutTime = new Date(pool.timeoutAt).getTime();
+
+  if (now < timeoutTime) return false;
+
+  const pendingCandidates = candidates.filter(c => c.status === 'pending');
+  if (pendingCandidates.length === 0) return false;
+
+  pendingCandidates.sort((a, b) => (b.qualityScore || 0) - (a.qualityScore || 0));
+  const selected = pendingCandidates[0];
+
+  selected.status = 'selected';
+  selected.selectedAt = new Date().toISOString();
+
+  const candidateData = readJSON('replyCandidates.json') || { candidates: [] };
+  const cIdx = candidateData.candidates.findIndex(c => c.id === selected.id);
+  if (cIdx !== -1) {
+    candidateData.candidates[cIdx] = selected;
+    writeJSON('replyCandidates.json', candidateData);
+  }
+
+  pool.status = 'timeout_fallback';
+  pool.selectedCandidateId = selected.id;
+  pool.fallbackAt = new Date().toISOString();
+
+  const poolData = readJSON('replyCandidatePools.json') || { pools: [] };
+  const pIdx = poolData.pools.findIndex(p => p.id === pool.id);
+  if (pIdx !== -1) {
+    poolData.pools[pIdx] = { ...pool, updatedAt: new Date().toISOString() };
+    writeJSON('replyCandidatePools.json', poolData);
+  }
+
+  const autoReply = {
+    id: generateId(),
+    letterId: letter.id,
+    fromParallel: selected.fromParallel,
+    senderName: selected.senderName,
+    content: selected.content,
+    emotion: selected.emotion,
+    source: 'ai_fallback',
+    candidateId: selected.id,
+    qualityScore: selected.qualityScore,
+    createdAt: new Date().toISOString()
+  };
+
+  if (!letter.replies) letter.replies = [];
+  letter.replies.push(autoReply);
+
+  return true;
 }
 
 function getSpeedMultiplier(speed) {
@@ -513,15 +674,7 @@ router.post('/', (req, res) => {
     replies: []
   };
 
-  if (Math.random() > 0.4) {
-    const autoReply = generateAutoReply(newLetter);
-    newLetter.replies.push({
-      id: generateId(),
-      letterId: newLetter.id,
-      ...autoReply,
-      createdAt: new Date(Date.now() + Math.random() * 3600000).toISOString()
-    });
-  }
+  initializeReplyCandidates(newLetter);
 
   letterData.letters.unshift(newLetter);
   writeJSON('letters.json', letterData);
@@ -539,10 +692,15 @@ router.post('/', (req, res) => {
     success: true,
     message: riskAnalysis.level !== 'safe'
       ? '信件已寄出。我们注意到内容中可能包含需要关注的情绪，愿你被温柔以待。'
-      : '信件已寄出，愿星光指引它到达',
+      : '信件已寄出，正在等待来自陌生人的温暖回应 ✨',
     data: {
       ...newLetter,
-      riskAnalysis
+      riskAnalysis,
+      replyCandidatePool: {
+        timeoutAt: new Date(Date.now() + REPLY_CANDIDATE_TIMEOUT).toISOString(),
+        status: 'waiting_human',
+        candidateCount: 5
+      }
     }
   });
 });
@@ -584,6 +742,7 @@ router.post('/:id/reply', (req, res) => {
     senderName: senderName || '来自平行世界的回音',
     content,
     emotion: emotion || '温暖',
+    source: 'human',
     createdAt: new Date().toISOString()
   };
 
@@ -1172,6 +1331,208 @@ router.get('/:id/replies/tree', (req, res) => {
 
   const replyTree = buildReplyTree(letter.replies || []);
   res.json({ success: true, data: replyTree });
+});
+
+router.get('/:id/reply-candidates', (req, res) => {
+  const { id } = req.params;
+
+  const poolData = getReplyCandidatePoolData(id);
+  if (!poolData) {
+    return res.status(404).json({ success: false, message: '候选池不存在' });
+  }
+
+  res.json({ success: true, data: poolData });
+});
+
+router.post('/:id/select-candidate', (req, res) => {
+  const { id } = req.params;
+  const { candidateId, userId } = req.body;
+
+  if (!candidateId) {
+    return res.status(400).json({ success: false, message: '缺少候选ID' });
+  }
+
+  const letterData = readJSON('letters.json') || { letters: [] };
+  const letter = letterData.letters.find(l => l.id === id);
+
+  if (!letter) {
+    return res.status(404).json({ success: false, message: '信件不存在' });
+  }
+
+  const poolInfo = getReplyCandidatePool(id);
+  if (!poolInfo) {
+    return res.status(404).json({ success: false, message: '候选池不存在' });
+  }
+
+  const { pool, candidates } = poolInfo;
+
+  if (pool.status === 'human_replied' || pool.status === 'timeout_fallback') {
+    return res.status(400).json({ success: false, message: '候选池已关闭' });
+  }
+
+  const candidate = candidates.find(c => c.id === candidateId);
+  if (!candidate) {
+    return res.status(404).json({ success: false, message: '候选不存在' });
+  }
+
+  candidate.status = 'selected';
+  candidate.selectedAt = new Date().toISOString();
+
+  const candidateData = readJSON('replyCandidates.json') || { candidates: [] };
+  const cIdx = candidateData.candidates.findIndex(c => c.id === candidateId);
+  if (cIdx !== -1) {
+    candidateData.candidates[cIdx] = candidate;
+    writeJSON('replyCandidates.json', candidateData);
+  }
+
+  candidates.forEach(c => {
+    if (c.id !== candidateId) {
+      c.status = 'rejected';
+      const idx = candidateData.candidates.findIndex(cc => cc.id === c.id);
+      if (idx !== -1) {
+        candidateData.candidates[idx] = c;
+      }
+    }
+  });
+  writeJSON('replyCandidates.json', candidateData);
+
+  pool.status = 'human_replied';
+  pool.selectedCandidateId = candidateId;
+
+  const poolData = readJSON('replyCandidatePools.json') || { pools: [] };
+  const pIdx = poolData.pools.findIndex(p => p.id === pool.id);
+  if (pIdx !== -1) {
+    poolData.pools[pIdx] = { ...pool, updatedAt: new Date().toISOString() };
+    writeJSON('replyCandidatePools.json', poolData);
+  }
+
+  const reply = {
+    id: generateId(),
+    letterId: id,
+    fromParallel: candidate.fromParallel,
+    senderName: candidate.senderName,
+    content: candidate.content,
+    emotion: candidate.emotion,
+    source: 'ai_generated',
+    candidateId: candidate.id,
+    qualityScore: candidate.qualityScore,
+    createdAt: new Date().toISOString()
+  };
+
+  letter.replies = letter.replies || [];
+  letter.replies.push(reply);
+  writeJSON('letters.json', letterData);
+
+  if (letter.senderId && letter.senderId !== userId) {
+    createNotification(
+      letter.senderId,
+      'new_reply',
+      '收到一封AI回信 ✨',
+      `你的信《${letter.title}》收到了来自 ${candidate.senderName} 的AI回信`,
+      id
+    );
+  }
+
+  res.json({
+    success: true,
+    message: '已选择AI回复并发送',
+    data: { reply, pool }
+  });
+});
+
+router.post('/:id/check-timeout', (req, res) => {
+  const { id } = req.params;
+
+  const letterData = readJSON('letters.json') || { letters: [] };
+  const letter = letterData.letters.find(l => l.id === id);
+
+  if (!letter) {
+    return res.status(404).json({ success: false, message: '信件不存在' });
+  }
+
+  const hasFallback = checkAndApplyTimeoutFallback(letter);
+
+  if (hasFallback) {
+    writeJSON('letters.json', letterData);
+    const poolData = getReplyCandidatePoolData(id);
+    return res.json({
+      success: true,
+      message: '超时补位已触发',
+      data: { hasFallback: true, poolData }
+    });
+  }
+
+  const poolData = getReplyCandidatePoolData(id);
+  res.json({
+    success: true,
+    data: { hasFallback: false, poolData }
+  });
+});
+
+router.post('/replies/:replyId/feedback', (req, res) => {
+  const { replyId } = req.params;
+  const { rating, helpful, tags, comment, userId } = req.body;
+
+  if (rating === undefined || helpful === undefined) {
+    return res.status(400).json({ success: false, message: '缺少必要参数' });
+  }
+
+  if (rating < 1 || rating > 5) {
+    return res.status(400).json({ success: false, message: '评分需在1-5之间' });
+  }
+
+  const letterData = readJSON('letters.json') || { letters: [] };
+  let targetReply = null;
+  let targetLetter = null;
+
+  for (const letter of letterData.letters) {
+    const reply = letter.replies?.find(r => r.id === replyId);
+    if (reply) {
+      targetReply = reply;
+      targetLetter = letter;
+      break;
+    }
+  }
+
+  if (!targetReply) {
+    return res.status(404).json({ success: false, message: '回复不存在' });
+  }
+
+  if (targetReply.feedback) {
+    return res.status(400).json({ success: false, message: '已经反馈过了' });
+  }
+
+  targetReply.feedback = {
+    rating: parseInt(rating),
+    helpful: helpful === true,
+    tags: tags || [],
+    comment: comment || '',
+    userId: userId || null,
+    createdAt: new Date().toISOString()
+  };
+
+  writeJSON('letters.json', letterData);
+
+  const candidateData = readJSON('replyCandidates.json') || { candidates: [] };
+  if (targetReply.candidateId) {
+    const candidate = candidateData.candidates.find(c => c.id === targetReply.candidateId);
+    if (candidate) {
+      candidate.feedbackCount = (candidate.feedbackCount || 0) + 1;
+      candidate.totalRating = (candidate.totalRating || 0) + parseInt(rating);
+      candidate.averageRating = Math.round((candidate.totalRating / candidate.feedbackCount) * 10) / 10;
+      const cIdx = candidateData.candidates.findIndex(c => c.id === candidate.id);
+      if (cIdx !== -1) {
+        candidateData.candidates[cIdx] = candidate;
+        writeJSON('replyCandidates.json', candidateData);
+      }
+    }
+  }
+
+  res.json({
+    success: true,
+    message: '感谢你的反馈 🌟',
+    data: { feedback: targetReply.feedback }
+  });
 });
 
 module.exports = router;

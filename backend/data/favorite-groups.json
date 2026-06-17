@@ -1,3 +1,44 @@
 {
-  "groups": []
+  "groups": [
+    {
+      "id": "mqhg7o8h2r450gyzr",
+      "userId": "user_001",
+      "name": "星河珍藏",
+      "icon": "⭐",
+      "color": "starlight",
+      "description": "",
+      "createdAt": "2026-06-17T02:25:07.697Z",
+      "isDefault": true
+    },
+    {
+      "id": "mqhg7o8huu9vza5yl",
+      "userId": "user_001",
+      "name": "温暖治愈",
+      "icon": "💖",
+      "color": "nebula-pink",
+      "description": "",
+      "createdAt": "2026-06-17T02:25:07.697Z",
+      "isDefault": false
+    },
+    {
+      "id": "mqhg7o8hvg8ynppwz",
+      "userId": "user_001",
+      "name": "勇气激励",
+      "icon": "🔥",
+      "color": "aurora",
+      "description": "",
+      "createdAt": "2026-06-17T02:25:07.697Z",
+      "isDefault": false
+    },
+    {
+      "id": "mqhg7o8hq9xn8xh4u",
+      "userId": "user_001",
+      "name": "思念回忆",
+      "icon": "🌙",
+      "color": "nebula-purple",
+      "description": "",
+      "createdAt": "2026-06-17T02:25:07.697Z",
+      "isDefault": false
+    }
+  ]
 }

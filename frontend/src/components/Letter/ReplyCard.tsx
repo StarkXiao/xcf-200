@@ -1,9 +1,23 @@
 import { useState } from 'react';
-import type { Reply } from '@/types';
+import type { Reply, ReplyQualityFeedback } from '@/types';
 import EmotionTag from '@/components/Emotion/EmotionTag';
 import RelayReplyForm from './RelayReplyForm';
+import ReplyFeedback from './ReplyFeedback';
 import { formatDate } from '@/utils/helpers';
-import { Globe2, Sparkles, Heart, Link2, Trophy, Crown } from 'lucide-react';
+import {
+  Globe2,
+  Sparkles,
+  Heart,
+  Link2,
+  Trophy,
+  Crown,
+  Bot,
+  User,
+  Users,
+  MessageSquare,
+  Star,
+  ThumbsUp,
+} from 'lucide-react';
 import { lettersApi } from '@/api/letters';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
@@ -15,6 +29,37 @@ const parallelColors = [
   { from: 'from-nebula-pink', to: 'from-nebula-purple', border: 'border-nebula-pink/40', bg: 'bg-nebula-pink/10' },
   { from: 'from-cosmic-300', to: 'from-aurora', border: 'border-cosmic-300/40', bg: 'bg-cosmic-300/10' },
 ];
+
+const sourceConfig = {
+  human: {
+    icon: User,
+    label: '人工回复',
+    color: 'text-aurora',
+    bgColor: 'bg-aurora/15',
+    borderColor: 'border-aurora/30',
+  },
+  ai_generated: {
+    icon: Bot,
+    label: 'AI回复',
+    color: 'text-nebula-purple',
+    bgColor: 'bg-nebula-purple/15',
+    borderColor: 'border-nebula-purple/30',
+  },
+  ai_fallback: {
+    icon: Bot,
+    label: 'AI补位',
+    color: 'text-nebula-orange',
+    bgColor: 'bg-nebula-orange/15',
+    borderColor: 'border-nebula-orange/30',
+  },
+  stranger: {
+    icon: Users,
+    label: '陌生人',
+    color: 'text-starlight',
+    bgColor: 'bg-starlight/15',
+    borderColor: 'border-starlight/30',
+  },
+};
 
 interface ReplyCardProps {
   reply: Reply;
@@ -43,6 +88,8 @@ export default function ReplyCard({
   const [isFeatured, setIsFeatured] = useState(reply.isFeatured || false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [featureLoading, setFeatureLoading] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback] = useState<ReplyQualityFeedback | null>(reply.feedback || null);
 
   const handleLike = async () => {
     if (likeLoading) return;
@@ -97,6 +144,16 @@ export default function ReplyCard({
     }
   };
 
+  const handleFeedbackSubmitted = (newFeedback: ReplyQualityFeedback) => {
+    setFeedback(newFeedback);
+    if (onReplyUpdated) {
+      onReplyUpdated({ ...reply, feedback: newFeedback });
+    }
+  };
+
+  const sourceInfo = reply.source ? sourceConfig[reply.source] : null;
+  const SourceIcon = sourceInfo?.icon || Globe2;
+  const isAiReply = reply.source === 'ai_generated' || reply.source === 'ai_fallback';
   const marginLeft = depth > 0 ? 'ml-4 sm:ml-8' : '';
 
   return (
@@ -116,6 +173,17 @@ export default function ReplyCard({
           </div>
         )}
 
+        {sourceInfo && (
+          <div
+            className={`absolute -top-3 left-6 flex items-center gap-1.5 px-3 py-1 rounded-full border ${sourceInfo.bgColor} ${sourceInfo.borderColor}`}
+          >
+            <SourceIcon className={`w-3 h-3 ${sourceInfo.color}`} />
+            <span className={`text-xs font-medium ${sourceInfo.color}`}>
+              {sourceInfo.label}
+            </span>
+          </div>
+        )}
+
         {depth === 0 && (
           <div className={`absolute -top-3 left-6 h-6 w-6 rounded-t-full border-x-2 border-t-2 ${colorScheme.border} ${colorScheme.bg}`} />
         )}
@@ -126,7 +194,7 @@ export default function ReplyCard({
 
         <div className="flex items-start gap-4">
           <div className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-gradient-to-br ${colorScheme.from}/20 ${colorScheme.to}/20 flex items-center justify-center shadow-inner ${depth > 0 ? 'w-8 h-8 sm:w-10 sm:h-10' : ''}`}>
-            <Globe2 className={`text-white/80 ${depth > 0 ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-5 h-5 sm:w-6 sm:h-6'}`} />
+            <SourceIcon className={`text-white/80 ${depth > 0 ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-5 h-5 sm:w-6 sm:h-6'}`} />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -144,11 +212,62 @@ export default function ReplyCard({
                   <span>第 {reply.chainOrder + 1} 棒</span>
                 </div>
               )}
+              {reply.qualityScore && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-starlight/15 text-starlight border border-starlight/20">
+                  <Star className="w-3 h-3 fill-starlight" />
+                  <span>质量分 {reply.qualityScore}</span>
+                </div>
+              )}
             </div>
 
             <p className={`text-white/85 leading-relaxed whitespace-pre-line mb-4 ${depth > 0 ? 'text-sm' : 'text-sm sm:text-base'}`}>
               {reply.content}
             </p>
+
+            {feedback && (
+              <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="w-4 h-4 text-starlight" />
+                  <span className="text-xs font-medium text-white/70">你的反馈</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-3.5 h-3.5 ${
+                          star <= feedback.rating
+                            ? 'fill-starlight text-starlight'
+                            : 'text-white/20'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1 text-xs">
+                    {feedback.helpful ? (
+                      <ThumbsUp className="w-3.5 h-3.5 text-aurora" />
+                    ) : (
+                      <ThumbsUp className="w-3.5 h-3.5 text-nebula-pink rotate-180" />
+                    )}
+                    <span className="text-white/50">
+                      {feedback.helpful ? '有帮助' : '没帮助'}
+                    </span>
+                  </div>
+                  {feedback.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {feedback.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded-full text-[10px] bg-nebula-purple/10 text-nebula-purple border border-nebula-purple/20"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -178,6 +297,20 @@ export default function ReplyCard({
                   <span>接力</span>
                 </button>
 
+                {isAiReply && !feedback && (
+                  <button
+                    onClick={() => setShowFeedback(!showFeedback)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all ${
+                      showFeedback
+                        ? 'bg-nebula-purple/20 text-nebula-purple border border-nebula-purple/30'
+                        : 'hover:bg-nebula-purple/10 text-white/60 hover:text-nebula-purple'
+                    }`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>反馈</span>
+                  </button>
+                )}
+
                 {depth === 0 && (
                   <button
                     onClick={handleToggleFeatured}
@@ -195,6 +328,14 @@ export default function ReplyCard({
                 )}
               </div>
             </div>
+
+            {showFeedback && !feedback && (
+              <ReplyFeedback
+                reply={reply}
+                onFeedbackSubmitted={handleFeedbackSubmitted}
+                onClose={() => setShowFeedback(false)}
+              />
+            )}
 
             {showRelayForm && (
               <RelayReplyForm

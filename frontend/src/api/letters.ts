@@ -11,6 +11,10 @@ import type {
   CompensationType,
   LetterCollaborationData,
   SubmitRelayReplyData,
+  ReplyCandidatePoolData,
+  SelectCandidateData,
+  SubmitFeedbackData,
+  ReplyQualityFeedback,
 } from '@/types';
 
 interface LettersQueryParams {
@@ -163,6 +167,33 @@ export const lettersApi = {
 
   getReplyTree: async (letterId: string): Promise<ApiResponse<Reply[]>> => {
     const response = await api.get(`/letters/${letterId}/replies/tree`);
+    return response.data;
+  },
+
+  getReplyCandidates: async (letterId: string): Promise<ApiResponse<ReplyCandidatePoolData>> => {
+    const response = await api.get(`/letters/${letterId}/reply-candidates`);
+    return response.data;
+  },
+
+  selectCandidate: async (
+    letterId: string,
+    data: SelectCandidateData
+  ): Promise<ApiResponse<{ reply: Reply; pool: any }>> => {
+    const response = await api.post(`/letters/${letterId}/select-candidate`, data);
+    return response.data;
+  },
+
+  checkTimeout: async (
+    letterId: string
+  ): Promise<ApiResponse<{ hasFallback: boolean; poolData: ReplyCandidatePoolData }>> => {
+    const response = await api.post(`/letters/${letterId}/check-timeout`);
+    return response.data;
+  },
+
+  submitReplyFeedback: async (
+    data: SubmitFeedbackData
+  ): Promise<ApiResponse<{ feedback: ReplyQualityFeedback }>> => {
+    const response = await api.post(`/letters/replies/${data.replyId}/feedback`, data);
     return response.data;
   },
 };

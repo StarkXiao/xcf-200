@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Heart, BookmarkPlus, Bookmark, ArrowLeft, Send, MessageSquare, Sparkles, Share2, Bell, FolderOpen, Users } from 'lucide-react';
 import LetterPaper from '@/components/Letter/LetterPaper';
 import ReplyCard from '@/components/Letter/ReplyCard';
+import ReplyCandidatePool from '@/components/Letter/ReplyCandidatePool';
 import MailRouteTracker from '@/components/MailRoute/MailRouteTracker';
 import SelectGroupModal from '@/components/Favorites/SelectGroupModal';
 import ReminderModal from '@/components/Favorites/ReminderModal';
@@ -365,6 +366,16 @@ export default function LetterDetail() {
                 </button>
               </div>
             </div>
+
+            {id && (
+              <ReplyCandidatePool
+                letterId={id}
+                onCandidateSelected={() => {
+                  fetchLetter();
+                  fetchCollaboration();
+                }}
+              />
+            )}
 
             <section>
               <div className="flex items-center justify-between gap-3 mb-6">

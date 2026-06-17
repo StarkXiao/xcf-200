@@ -9,6 +9,17 @@ export interface User {
   receivedLetters: number;
 }
 
+export type ReplySource = 'human' | 'ai_generated' | 'ai_fallback' | 'stranger';
+
+export interface ReplyQualityFeedback {
+  rating: number;
+  helpful: boolean;
+  tags: string[];
+  comment?: string;
+  userId?: string;
+  createdAt: string;
+}
+
 export interface Reply {
   id: string;
   letterId: string;
@@ -26,6 +37,13 @@ export interface Reply {
   chainOrder?: number;
   emotionChain?: string[];
   subReplies?: Reply[];
+  source?: ReplySource;
+  qualityScore?: number;
+  candidateId?: string;
+  feedback?: ReplyQualityFeedback | null;
+  isStrangerReply?: boolean;
+  anonymousId?: string;
+  review?: ReplyReview | null;
 }
 
 export interface Letter {
@@ -1296,4 +1314,55 @@ export interface InteractionQueryParams {
   timeRange?: 'today' | 'week' | 'month' | 'year';
   emotion?: string;
   sort?: 'latest' | 'oldest';
+}
+
+export type ReplyCandidateStatus = 'pending' | 'selected' | 'rejected' | 'timeout';
+export type ReplyPoolStatus = 'waiting_human' | 'human_replied' | 'timeout_fallback' | 'closed';
+
+export interface ReplyCandidate {
+  id: string;
+  letterId: string;
+  candidateIndex: number;
+  fromParallel: string;
+  senderName: string;
+  content: string;
+  emotion: string;
+  qualityScore: number;
+  status: ReplyCandidateStatus;
+  source: 'ai_generated' | 'human_suggested';
+  selectedAt?: string;
+  createdAt: string;
+}
+
+export interface ReplyCandidatePool {
+  id: string;
+  letterId: string;
+  timeoutAt: string;
+  status: ReplyPoolStatus;
+  selectedCandidateId: string | null;
+  fallbackAt?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ReplyCandidatePoolData {
+  pool: ReplyCandidatePool;
+  candidates: ReplyCandidate[];
+  remainingTime: number;
+  hasHumanReply: boolean;
+}
+
+export interface SelectCandidateData {
+  letterId: string;
+  candidateId: string;
+  userId?: string;
+}
+
+export interface SubmitFeedbackData {
+  replyId: string;
+  rating: number;
+  helpful: boolean;
+  tags: string[];
+  comment?: string;
+  userId?: string;
 }

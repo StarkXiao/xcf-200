@@ -1,0 +1,13 @@
+{
+  "reviews": [
+    {
+      "id": "mqhg787nikvnkf002",
+      "letterId": "mqhg7849j5uarcose",
+      "replyId": "mqhg787l8k7zc8h4b",
+      "userId": "stranger_user_001",
+      "riskLevel": "safe",
+      "status": "pending",
+      "createdAt": "2026-06-17T02:24:46.931Z"
+    }
+  ]
+}
