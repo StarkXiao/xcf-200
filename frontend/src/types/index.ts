@@ -1433,6 +1433,68 @@ export interface CooldownState {
   remaining: number;
 }
 
+export interface GrowthWritingFrequency {
+  monthlyData: { month: string; count: number }[];
+  weeklyData: { week: string; count: number }[];
+  averagePerWeek: number;
+  averagePerMonth: number;
+  currentStreak: number;
+  longestStreak: number;
+  peakMonth: { month: string; count: number } | null;
+  totalWritingDays: number;
+  hourlyDistribution: { hour: number; label: string; count: number }[];
+}
+
+export interface GrowthEmotionProfile {
+  topEmotions: { name: string; color: string; icon: string; count: number; percentage: number }[];
+  emotionTimeline: { period: string; label: string; emotions: { name: string; color: string; icon: string; count: number }[] }[];
+  currentDominantEmotion: { name: string; color: string; icon: string; percentage: number } | null;
+  emotionBalance: number;
+  emotionShift: { from: string; to: string; fromIcon: string; toIcon: string; description: string } | null;
+}
+
+export interface GrowthRecipientProfile {
+  topRecipients: { name: string; type: string; typeLabel: string; typeIcon: string; count: number; percentage: number; lastWrittenAt: string }[];
+  typeDistribution: { key: string; label: string; icon: string; count: number; percentage: number }[];
+  recentShift: string | null;
+}
+
+export interface GrowthPhase {
+  period: string;
+  label: string;
+  description: string;
+  letterCount: number;
+  dominantEmotion: string;
+  dominantEmotionIcon: string;
+  dominantRecipientType: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface GrowthStageTrends {
+  phases: GrowthPhase[];
+  currentPhase: { label: string; description: string; since: string } | null;
+  trendDirection: 'rising' | 'stable' | 'declining';
+  trendDescription: string;
+}
+
+export interface GrowthMilestone {
+  date: string;
+  type: string;
+  description: string;
+  icon: string;
+}
+
+export interface GrowthProfileData {
+  writingFrequency: GrowthWritingFrequency;
+  emotionProfile: GrowthEmotionProfile;
+  recipientProfile: GrowthRecipientProfile;
+  stageTrends: GrowthStageTrends;
+  milestones: GrowthMilestone[];
+  joinDate: string;
+  accountAgeDays: number;
+}
+
 export interface SkillCategoryInfo {
   key: SkillCategory;
   name: string;
@@ -1456,14 +1518,8 @@ export interface SkillTreeData {
   skills: Skill[];
   userProgress: UserSkillProgress[];
   aura: UserAuraState;
-  userLevel: number;
   totalSkillPoints: number;
   availableSkillPoints: number;
-  usedSkillPoints: number;
-  starProgress: {
-    current: number;
-    next: number;
-  };
 }
 
 export interface CombatButtonData {
@@ -1498,6 +1554,7 @@ export interface SkillBranchSelectRequest {
 
 export interface SkillUseRequest {
   skillId: string;
+  userId: string;
   trigger: CombatTrigger;
   targetId?: string;
 }
@@ -1508,7 +1565,6 @@ export interface SkillUseResult {
   effects: SkillEffect[];
   auraSpent: number;
   auraRemaining: number;
-  auraMax: number;
   cooldownEndsAt: string;
   message: string;
 }

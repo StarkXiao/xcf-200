@@ -151,94 +151,39 @@ const SkillCard: React.FC<SkillCardProps> = ({
 
         {level > 0 && (
           <div className="mb-3 p-3 bg-black/25 rounded-xl space-y-2">
-            {skill.effects.map((eff, i) => {
-              const currentValue = computeEffectiveValue(eff, level, previewBranch);
-              const nextValue = level < skill.maxLevel ? computeEffectiveValue(eff, level + 1, previewBranch) : currentValue;
-              const valueChange = nextValue - currentValue;
-              return (
-                <div key={i} className="flex items-center justify-between text-xs">
-                  <span className="text-white/70">{eff.description}:</span>
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold text-emerald-300 tabular-nums">
-                      {eff.target === 'letter_multiplier' || eff.target === 'aura_free_window'
-                        ? `x${currentValue.toFixed(1)}`
-                        : `+${Math.floor(currentValue)}`}
+            {skill.effects.map((eff, i) => (
+              <div key={i} className="flex items-center justify-between text-xs">
+                <span className="text-white/70">{eff.description}:</span>
+                <span className="font-bold text-emerald-300 tabular-nums">
+                  {eff.target === 'letter_multiplier' || eff.target === 'aura_free_window'
+                    ? `x${computeEffectiveValue(eff, level, previewBranch).toFixed(1)}`
+                    : `+${Math.floor(computeEffectiveValue(eff, level, previewBranch))}`}
+                  {level < skill.maxLevel && (
+                    <span className="text-white/50 ml-1">
+                      (下一级+{eff.scalePerLevel})
                     </span>
-                    {level < skill.maxLevel && valueChange > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
-                        +{eff.target === 'letter_multiplier' || eff.target === 'aura_free_window'
-                          ? valueChange.toFixed(1)
-                          : Math.floor(valueChange)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                  )}
+                </span>
+              </div>
+            ))}
             <div className="flex items-center justify-between text-xs pt-2 border-t border-white/10">
               <span className="text-white/70">灵气消耗:</span>
-              <div className="flex items-center gap-1">
+              <span className={`font-bold tabular-nums ${effectiveAuraCost < skill.baseAuraCost ? 'text-emerald-300' : effectiveAuraCost > skill.baseAuraCost ? 'text-rose-300' : 'text-amber-300'}`}>
+                {effectiveAuraCost}
                 {effectiveAuraCost !== skill.baseAuraCost && (
-                  <span className="text-white/40 line-through">{skill.baseAuraCost}</span>
+                  <span className="text-white/50 ml-1">(基础{skill.baseAuraCost})</span>
                 )}
-                <span className={`font-bold tabular-nums ${effectiveAuraCost < skill.baseAuraCost ? 'text-emerald-300' : effectiveAuraCost > skill.baseAuraCost ? 'text-rose-300' : 'text-amber-300'}`}>
-                  {effectiveAuraCost}
-                </span>
-                {effectiveAuraCost < skill.baseAuraCost && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
-                    -{skill.baseAuraCost - effectiveAuraCost}
-                  </span>
-                )}
-                {effectiveAuraCost > skill.baseAuraCost && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
-                    +{effectiveAuraCost - skill.baseAuraCost}
-                  </span>
-                )}
-              </div>
+              </span>
             </div>
             {skill.baseCooldown > 0 && (
               <div className="flex items-center justify-between text-xs">
                 <span className="text-white/70">冷却时间:</span>
-                <div className="flex items-center gap-1">
+                <span className={`font-bold tabular-nums ${effectiveCooldown < skill.baseCooldown ? 'text-sky-300' : effectiveCooldown > skill.baseCooldown ? 'text-rose-300' : 'text-amber-300'}`}>
+                  {effectiveCooldown}s
                   {effectiveCooldown !== skill.baseCooldown && (
-                    <span className="text-white/40 line-through">{skill.baseCooldown}s</span>
+                    <span className="text-white/50 ml-1">(基础{skill.baseCooldown}s)</span>
                   )}
-                  <span className={`font-bold tabular-nums ${effectiveCooldown < skill.baseCooldown ? 'text-sky-300' : effectiveCooldown > skill.baseCooldown ? 'text-rose-300' : 'text-amber-300'}`}>
-                    {effectiveCooldown}s
-                  </span>
-                  {effectiveCooldown < skill.baseCooldown && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold">
-                      -{skill.baseCooldown - effectiveCooldown}s
-                    </span>
-                  )}
-                  {effectiveCooldown > skill.baseCooldown && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold">
-                      +{effectiveCooldown - skill.baseCooldown}s
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-            {level < skill.maxLevel && (
-              <div className="mt-2 pt-2 border-t border-amber-500/20 bg-amber-500/5 rounded-lg p-2">
-                <div className="text-[10px] font-bold text-amber-300 mb-1.5 flex items-center gap-1">
-                  <span>⬆️</span> 升级到 Lv.{level + 1} 预览
-                </div>
-                <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                  {skill.effects.map((eff, i) => {
-                    const nextVal = computeEffectiveValue(eff, level + 1, previewBranch);
-                    return (
-                      <div key={i} className="flex justify-between">
-                        <span className="text-white/50 truncate">{eff.description}:</span>
-                        <span className="text-amber-200 font-bold">
-                          {eff.target === 'letter_multiplier' || eff.target === 'aura_free_window'
-                            ? `x${nextVal.toFixed(1)}`
-                            : `+${Math.floor(nextVal)}`}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                </span>
               </div>
             )}
           </div>

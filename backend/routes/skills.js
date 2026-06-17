@@ -51,18 +51,6 @@ function computeEffectiveAura(skill, progress, userProgress) {
   }
   const wardenSkill = userProgress.find(p => p.skillId === 'warden_1');
   if (skill.id !== 'warden_1' && wardenSkill?.level) {
-    const wardenDef = getSkillData().skills.find(s => s.id === 'warden_1');
-    if (wardenDef) {
-      let regenBonus = wardenDef.effects[1].value + wardenDef.effects[1].scalePerLevel * (wardenSkill.level - 1);
-      if (wardenSkill.selectedBranch && wardenDef.branches) {
-        const branch = wardenDef.branches.find(b => b.id === wardenSkill.selectedBranch);
-        if (branch?.effectModifier?.value && branch.id === 'path_b') {
-          regenBonus += branch.effectModifier.value;
-        }
-      }
-      const auraDiscountPercent = Math.min(30, regenBonus * 2);
-      base = Math.max(0, Math.floor(base * (100 - auraDiscountPercent) / 100));
-    }
   }
   return Math.max(0, base);
 }
@@ -251,13 +239,6 @@ router.post('/upgrade/:userId/:skillId', (req, res) => {
   const newLevel = progress.level;
   const branchAvailable = skill.branches && newLevel >= (skill.branchUnlockLevel || 3);
   const nextUpgradeCost = newLevel < skill.maxLevel ? computeUpgradeCost(skill, newLevel) : null;
-  const prevProgress = { ...progress, level: newLevel - 1 };
-  const prevAuraCost = computeEffectiveAura(skill, prevProgress, userRecord.skills);
-  const newAuraCost = computeEffectiveAura(skill, progress, userRecord.skills);
-  const prevCooldown = computeEffectiveCooldown(skill, prevProgress, userRecord.skills);
-  const newCooldown = computeEffectiveCooldown(skill, progress, userRecord.skills);
-  const prevEffects = computeEffectiveEffects(skill, prevProgress);
-  const newEffects = computeEffectiveEffects(skill, progress);
 
   res.json({
     success: true,
@@ -272,23 +253,7 @@ router.post('/upgrade/:userId/:skillId', (req, res) => {
       branches: branchAvailable ? skill.branches : null,
       selectedBranch: progress.selectedBranch,
       nextUpgradeCost,
-      effects: newEffects,
-      prevEffects,
-      auraCost: {
-        previous: prevAuraCost,
-        current: newAuraCost,
-        change: newAuraCost - prevAuraCost
-      },
-      cooldown: {
-        previous: prevCooldown,
-        current: newCooldown,
-        change: newCooldown - prevCooldown
-      },
-      effectsChange: newEffects.map((eff, i) => ({
-        ...eff,
-        previousValue: prevEffects[i]?.value || 0,
-        change: eff.value - (prevEffects[i]?.value || 0)
-      }))
+      effects: computeEffectiveEffects(skill, progress)
     }
   });
 });

@@ -19,6 +19,7 @@ const parallelMatchRoutes = require('./routes/parallelMatch');
 const favoritesRoutes = require('./routes/favorites');
 const draftRoutes = require('./routes/drafts');
 const skillRoutes = require('./routes/skills');
+const growthProfileRoutes = require('./routes/growthProfile');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -43,6 +44,7 @@ app.use('/api/parallel-match', parallelMatchRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/drafts', draftRoutes);
 app.use('/api/skills', skillRoutes);
+app.use('/api/growth-profile', growthProfileRoutes);
 
 app.get('/api', (req, res) => {
   res.json({ 

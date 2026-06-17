@@ -5,7 +5,7 @@ import {
   User as UserIcon, Edit3, LogOut, ChevronRight, FileText, MessageCircle,
   Route, AlertTriangle, ExternalLink, Award, Trophy, Plus, Trash2,
   FolderOpen, Bell, Check, CheckSquare, Square, Move, BarChart3, Eye,
-  Zap, Filter, Clock, ArrowUpDown
+  Zap, Filter, Clock, ArrowUpDown, BookOpen
 } from 'lucide-react';
 import LetterCard from '@/components/Letter/LetterCard';
 import MailRouteStatsCard from '@/components/MailRoute/MailRouteStatsCard';
@@ -15,6 +15,7 @@ import GroupModal from '@/components/Favorites/GroupModal';
 import FavoritesStats from '@/components/Favorites/FavoritesStats';
 import ReminderList from '@/components/Favorites/ReminderList';
 import ReminderModal from '@/components/Favorites/ReminderModal';
+import GrowthArchive from '@/components/GrowthArchive/GrowthArchive';
 import { userApi } from '@/api/user';
 import { lettersApi } from '@/api/letters';
 import { activitiesApi } from '@/api/activities';
@@ -24,10 +25,10 @@ import type { DraftStats } from '@/types';
 import useAuthStore from '@/store/useAuthStore';
 import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
-import type { Letter, UserStats, Honor, FavoriteStats, FavoriteReminder, FavoriteGroup, Interaction, InteractionTypeStats, InteractionEmotionStat, InteractionType, InteractionQueryParams } from '@/types';
+import type { Letter, UserStats, Honor, FavoriteStats, FavoriteReminder, FavoriteGroup, Interaction, InteractionTypeStats, InteractionEmotionStat, InteractionType, InteractionQueryParams, GrowthProfileData } from '@/types';
 import { formatDate, getRecipientTypeLabel, EXCEPTION_INFO } from '@/utils/helpers';
 
-type TabType = 'letters' | 'favorites' | 'mailroute' | 'honors' | 'interactions' | 'edit';
+type TabType = 'letters' | 'favorites' | 'mailroute' | 'honors' | 'interactions' | 'growth' | 'edit';
 type FavoritesSubTab = 'list' | 'groups' | 'reminders' | 'stats';
 
 const avatarOptions = ['🌟', '🌙', '🌈', '🦋', '🌸', '🌊', '⭐', '🐱', '🦄', '🌻', '☕', '🎨', '🍀', '🌠', '🔮', '🌌'];
@@ -89,6 +90,9 @@ export default function Profile() {
     sort: 'latest',
   });
   const [interactionLoading, setInteractionLoading] = useState(false);
+
+  const [growthData, setGrowthData] = useState<GrowthProfileData | null>(null);
+  const [growthLoading, setGrowthLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -191,6 +195,28 @@ export default function Profile() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, interactionFilter, user?.id]);
+
+  const fetchGrowthProfile = async () => {
+    if (!user) return;
+    try {
+      setGrowthLoading(true);
+      const res = await userApi.getGrowthProfile(user.id);
+      if (res.success && res.data) {
+        setGrowthData(res.data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGrowthLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'growth' && user) {
+      fetchGrowthProfile();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, user?.id]);
 
   const refreshFavorites = async () => {
     if (!user) return;
@@ -366,7 +392,7 @@ export default function Profile() {
     }
   };
 
-  if (loadingLocal && activeTab !== 'favorites') {
+  if (loadingLocal && activeTab !== 'favorites' && activeTab !== 'growth') {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
@@ -495,6 +521,7 @@ export default function Profile() {
               {[
                 { key: 'letters', label: '我写的信', icon: Mail },
                 { key: 'interactions', label: '我的互动', icon: Zap },
+                { key: 'growth', label: '成长档案', icon: BookOpen },
                 { key: 'mailroute', label: '邮路追踪', icon: Route },
                 { key: 'favorites', label: '我的收藏', icon: Bookmark },
                 { key: 'honors', label: '我的荣誉', icon: Trophy },
@@ -1163,6 +1190,21 @@ export default function Profile() {
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === 'growth' && (
+              <GrowthArchive
+                data={growthData || {
+                  writingFrequency: { monthlyData: [], weeklyData: [], averagePerWeek: 0, averagePerMonth: 0, currentStreak: 0, longestStreak: 0, peakMonth: null, totalWritingDays: 0, hourlyDistribution: [] },
+                  emotionProfile: { topEmotions: [], emotionTimeline: [], currentDominantEmotion: null, emotionBalance: 50, emotionShift: null },
+                  recipientProfile: { topRecipients: [], typeDistribution: [], recentShift: null },
+                  stageTrends: { phases: [], currentPhase: null, trendDirection: 'stable' as const, trendDescription: '' },
+                  milestones: [],
+                  joinDate: '',
+                  accountAgeDays: 0,
+                }}
+                loading={growthLoading}
+              />
             )}
 
             {activeTab === 'honors' && (

@@ -25,7 +25,7 @@ const SkillTreePage: React.FC = () => {
 
   useEffect(() => {
     if (error && !toastShown) {
-      showToast({ type: 'error', message: error });
+      showToast({ id: String(Date.now()), type: 'error', message: error });
       clearError();
       setToastShown(true);
       setTimeout(() => setToastShown(false), 100);
@@ -36,43 +36,15 @@ const SkillTreePage: React.FC = () => {
     if (!user?.id) return;
     const result = await upgradeSkill(user.id, skill.id);
     if (result) {
-      const changes: string[] = [];
-      if (result.effectsChange && result.effectsChange.length > 0) {
-        result.effectsChange.forEach((eff) => {
-          if (eff.change > 0) {
-            const displayVal = eff.target === 'letter_multiplier' || eff.target === 'aura_free_window'
-              ? `+${eff.change.toFixed(1)}`
-              : `+${Math.floor(eff.change)}`;
-            changes.push(`${eff.description} ${displayVal}`);
-          }
-        });
-      }
-      if (result.auraCost && result.auraCost.change !== 0) {
-        const sign = result.auraCost.change > 0 ? '+' : '';
-        changes.push(`灵气消耗 ${sign}${result.auraCost.change}`);
-      }
-      if (result.cooldown && result.cooldown.change !== 0) {
-        const sign = result.cooldown.change > 0 ? '+' : '';
-        changes.push(`冷却 ${sign}${result.cooldown.change}s`);
-      }
-      const changeStr = changes.length > 0 ? `\n📈 ${changes.join(' | ')}` : '';
       showToast({
+        id: String(Date.now()),
         type: 'success',
-        message: `${skill.name} 升级到 Lv.${result.newLevel}！${changeStr}`,
-        duration: 3500,
+        message: `${skill.name} 升级到 Lv.${result.newLevel}！`,
+        duration: 2500,
       });
-      if (result.branchAvailable && !result.selectedBranch) {
-        setTimeout(() => {
-          showToast({
-            type: 'info',
-            message: `🌟 ${skill.name} 已可选择分支强化！`,
-            duration: 3000,
-          });
-        }, 1000);
-      }
     } else {
       const err = useSkillStore.getState().error;
-      if (err) showToast({ type: 'error', message: err });
+      if (err) showToast({ id: String(Date.now() + 1), type: 'error', message: err });
     }
   };
 
@@ -80,30 +52,11 @@ const SkillTreePage: React.FC = () => {
     if (!user?.id) return;
     const result = await selectBranch(user.id, skill.id, branch);
     if (result) {
-      const changes: string[] = [];
-      if (result.effects && result.effects.length > 0) {
-        result.effects.forEach((eff) => {
-          const displayVal = eff.target === 'letter_multiplier' || eff.target === 'aura_free_window'
-            ? `x${eff.value.toFixed(1)}`
-            : `+${Math.floor(eff.value)}`;
-          changes.push(`${eff.description} ${displayVal}`);
-        });
-      }
-      if (result.auraCost !== undefined && result.auraCost !== skill.baseAuraCost) {
-        const diff = result.auraCost - skill.baseAuraCost;
-        const sign = diff > 0 ? '+' : '';
-        changes.push(`灵气 ${sign}${diff}`);
-      }
-      if (result.cooldown !== undefined && result.cooldown !== skill.baseCooldown) {
-        const diff = result.cooldown - skill.baseCooldown;
-        const sign = diff > 0 ? '+' : '';
-        changes.push(`冷却 ${sign}${diff}s`);
-      }
-      const changeStr = changes.length > 0 ? `\n✨ ${changes.join(' | ')}` : '';
       showToast({
+        id: String(Date.now()),
         type: 'success',
-        message: `${skill.name} 已选择「${result.branchInfo.name}」之道！${changeStr}`,
-        duration: 3500,
+        message: `${skill.name} 已选择「${result.branchInfo.name}」之道！`,
+        duration: 2500,
       });
     }
   };

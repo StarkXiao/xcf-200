@@ -70,25 +70,6 @@ export interface UpgradeResult {
     scalePerLevel: number;
     description: string;
   }>;
-  auraCost: {
-    previous: number;
-    current: number;
-    change: number;
-  };
-  cooldown: {
-    previous: number;
-    current: number;
-    change: number;
-  };
-  effectsChange: Array<{
-    type: string;
-    target: string;
-    value: number;
-    scalePerLevel: number;
-    description: string;
-    previousValue: number;
-    change: number;
-  }>;
 }
 
 export interface BranchResult {

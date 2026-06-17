@@ -1,5 +1,5 @@
 import api from '@/utils/api';
-import type { User, Letter, UserStats, ApiResponse, Interaction, InteractionTypeStats, InteractionEmotionStat, InteractionQueryParams } from '@/types';
+import type { User, Letter, UserStats, ApiResponse, Interaction, InteractionTypeStats, InteractionEmotionStat, InteractionQueryParams, GrowthProfileData } from '@/types';
 
 interface ProfileData {
   username?: string;
@@ -58,6 +58,11 @@ export const userApi = {
     total: number;
   }> => {
     const response = await api.get(`/user/${userId}/interactions`, { params });
+    return response.data;
+  },
+
+  getGrowthProfile: async (userId: string): Promise<ApiResponse<GrowthProfileData>> => {
+    const response = await api.get(`/growth-profile/${userId}`);
     return response.data;
   },
 };

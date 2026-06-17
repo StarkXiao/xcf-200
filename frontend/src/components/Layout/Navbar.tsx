@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Home, Tag, User, PenLine, LogOut, Menu, X, Sparkles, Archive, MessageSquareHeart, HeartPulse, Globe, Mailbox, Orbit, Trophy, Shield, Atom, FileText, Wand2 } from 'lucide-react';
+import { Mail, Home, Tag, User, PenLine, LogOut, Menu, X, Sparkles, Archive, MessageSquareHeart, HeartPulse, Globe, Mailbox, Orbit, Trophy, Shield, Atom, FileText } from 'lucide-react';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
 import { cn } from '@/utils/helpers';

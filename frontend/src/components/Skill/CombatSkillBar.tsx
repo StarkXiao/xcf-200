@@ -78,21 +78,21 @@ const CombatSkillBar: React.FC<CombatSkillBarProps> = ({
     if (!user?.id) return;
     if (!btn.canUse) {
       if (btn.isOnCooldown) {
-        showToast({ type: 'warning', message: `技能冷却中，还需 ${cooldownTimers[btn.skillId] || btn.cooldownRemaining} 秒` });
+        showToast({ id: String(Date.now()), type: 'warning', message: `技能冷却中，还需 ${cooldownTimers[btn.skillId] || btn.cooldownRemaining} 秒` });
       } else if (!btn.hasEnoughAura) {
-        showToast({ type: 'error', message: `灵气不足，需要 ${btn.finalAuraCost} 点` });
+        showToast({ id: String(Date.now()), type: 'error', message: `灵气不足，需要 ${btn.finalAuraCost} 点` });
       } else if (!btn.isUnlocked) {
-        showToast({ type: 'warning', message: '技能未解锁，请前往技能树学习' });
+        showToast({ id: String(Date.now()), type: 'warning', message: '技能未解锁，请前往技能树学习' });
       }
       return;
     }
 
     const result = await useSkill(user.id, btn.skillId, trigger, targetId);
     if (result) {
-      showToast({ type: 'success', message: result.message, duration: 3000 });
+      showToast({ id: String(Date.now()), type: 'success', message: result.message, duration: 3000 });
     } else {
       const err = useSkillStore.getState().error;
-      if (err) showToast({ type: 'error', message: err });
+      if (err) showToast({ id: String(Date.now()), type: 'error', message: err });
     }
   };
 
@@ -225,11 +225,11 @@ const CombatSkillBar: React.FC<CombatSkillBarProps> = ({
                   {btn.level > 0 && (
                     <div className="flex items-center justify-center gap-1 mt-0.5">
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-300 font-bold">
-                        Lv.{btn.level}/{btn.maxLevel}
+                        Lv.{btn.level}
                       </span>
                       {btn.selectedBranch && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/30 text-purple-300 font-bold" title="已选择分支强化">
-                          🌟分支
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/30 text-purple-300 font-bold">
+                          分支
                         </span>
                       )}
                     </div>
@@ -240,51 +240,15 @@ const CombatSkillBar: React.FC<CombatSkillBarProps> = ({
                   {btn.finalAuraCost > 0 && (
                     <div className="flex items-center justify-between text-[10px]">
                       <span className="text-white/60">🔮 灵气</span>
-                      <div className="flex items-center gap-1">
-                        {btn.effectiveAuraCost !== btn.baseAuraCost && (
-                          <span className="text-white/40 line-through">{btn.baseAuraCost}</span>
-                        )}
-                        <span className={`font-bold tabular-nums ${localAura >= btn.finalAuraCost ? 'text-emerald-300' : 'text-rose-300'}`}>
-                          {data?.auraFreeActive ? '✨免费' : btn.finalAuraCost}
-                        </span>
-                        {btn.effectiveAuraCost < btn.baseAuraCost && (
-                          <span className="text-emerald-400 text-[9px]">↓{btn.baseAuraCost - btn.effectiveAuraCost}</span>
-                        )}
-                        {btn.effectiveAuraCost > btn.baseAuraCost && (
-                          <span className="text-rose-400 text-[9px]">↑{btn.effectiveAuraCost - btn.baseAuraCost}</span>
-                        )}
-                      </div>
+                      <span className={`font-bold tabular-nums ${localAura >= btn.finalAuraCost ? 'text-emerald-300' : 'text-rose-300'}`}>
+                        {data?.auraFreeActive ? '免费' : btn.finalAuraCost}
+                      </span>
                     </div>
                   )}
                   {btn.effectiveCooldown > 0 && (
                     <div className="flex items-center justify-between text-[10px]">
                       <span className="text-white/60">⏱️ 冷却</span>
-                      <div className="flex items-center gap-1">
-                        {btn.effectiveCooldown !== btn.baseCooldown && (
-                          <span className="text-white/40 line-through">{btn.baseCooldown}s</span>
-                        )}
-                        <span className="font-bold text-sky-300 tabular-nums">{btn.effectiveCooldown}s</span>
-                        {btn.effectiveCooldown < btn.baseCooldown && (
-                          <span className="text-sky-400 text-[9px]">↓{btn.baseCooldown - btn.effectiveCooldown}s</span>
-                        )}
-                        {btn.effectiveCooldown > btn.baseCooldown && (
-                          <span className="text-rose-400 text-[9px]">↑{btn.effectiveCooldown - btn.baseCooldown}s</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {btn.effects.length > 0 && btn.level > 0 && (
-                    <div className="pt-1 border-t border-white/5">
-                      {btn.effects.slice(0, 2).map((eff, i) => (
-                        <div key={i} className="flex items-center justify-between text-[9px]">
-                          <span className="text-white/50 truncate">{eff.description}</span>
-                          <span className="font-bold text-emerald-300 tabular-nums">
-                            {eff.target === 'letter_multiplier' || eff.target === 'aura_free_window'
-                              ? `x${eff.value.toFixed(1)}`
-                              : `+${Math.floor(eff.value)}`}
-                          </span>
-                        </div>
-                      ))}
+                      <span className="font-bold text-sky-300 tabular-nums">{btn.effectiveCooldown}s</span>
                     </div>
                   )}
                 </div>
