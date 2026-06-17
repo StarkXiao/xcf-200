@@ -40,6 +40,7 @@ export interface Letter {
   isPublic: boolean;
   isAnonymous: boolean;
   likes: number;
+  views?: number;
   createdAt: string;
   deliverAt: string;
   replies: Reply[];
@@ -54,6 +55,7 @@ export interface LetterListItem {
   content: string;
   emotions: string[];
   likes: number;
+  views?: number;
   repliesCount: number;
   createdAt: string;
 }
@@ -1250,4 +1252,48 @@ export interface LetterCollaborationData {
   stats: CollaborationStats;
   emotionChains: EmotionChainData[];
   featuredReplies: Reply[];
+}
+
+export type InteractionType = 'like' | 'reply' | 'favorite' | 'view';
+
+export interface Interaction {
+  id: string;
+  type: InteractionType;
+  letterId: string;
+  letterTitle: string;
+  letterEmotions: string[];
+  createdAt: string;
+  icon: string;
+  description: string;
+  count?: number;
+  replyId?: string;
+  replyContent?: string;
+  replySender?: string;
+  replyEmotion?: string;
+  favoriteId?: string;
+  viewCount?: number;
+  totalViews?: number;
+}
+
+export interface InteractionTypeStats {
+  total: number;
+  like: number;
+  reply: number;
+  favorite: number;
+  view: number;
+}
+
+export interface InteractionEmotionStat {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  count: number;
+}
+
+export interface InteractionQueryParams {
+  type?: InteractionType;
+  timeRange?: 'today' | 'week' | 'month' | 'year';
+  emotion?: string;
+  sort?: 'latest' | 'oldest';
 }

@@ -51,7 +51,7 @@ export default function LetterDetail() {
     if (!id) return;
     try {
       setLoadingLocal(true);
-      const res = await lettersApi.getLetterById(id);
+      const res = await lettersApi.getLetterById(id, user?.id);
       if (res.success && res.data) {
         setLetter(res.data);
         setLikes(res.data.likes);

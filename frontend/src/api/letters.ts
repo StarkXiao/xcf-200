@@ -56,8 +56,8 @@ export const lettersApi = {
     return response.data;
   },
 
-  getLetterById: async (id: string): Promise<ApiResponse<Letter>> => {
-    const response = await api.get(`/letters/${id}`);
+  getLetterById: async (id: string, viewerId?: string): Promise<ApiResponse<Letter>> => {
+    const response = await api.get(`/letters/${id}`, { params: viewerId ? { viewerId } : undefined });
     return response.data;
   },
 

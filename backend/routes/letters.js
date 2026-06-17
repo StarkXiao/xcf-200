@@ -435,6 +435,7 @@ router.get('/', (req, res) => {
     content: l.content.substring(0, 100) + (l.content.length > 100 ? '...' : ''),
     emotions: l.emotions,
     likes: l.likes || 0,
+    views: l.views || 0,
     repliesCount: l.replies ? l.replies.length : 0,
     createdAt: l.createdAt
   }));
@@ -451,11 +452,28 @@ router.get('/', (req, res) => {
 
 router.get('/:id', (req, res) => {
   const { id } = req.params;
+  const { viewerId } = req.query;
   const letterData = readJSON('letters.json') || { letters: [] };
-  const letter = letterData.letters.find(l => l.id === id);
+  const letterIndex = letterData.letters.findIndex(l => l.id === id);
 
-  if (!letter) {
+  if (letterIndex === -1) {
     return res.status(404).json({ success: false, message: '信件不存在' });
+  }
+
+  const letter = letterData.letters[letterIndex];
+  letter.views = (letter.views || 0) + 1;
+  writeJSON('letters.json', letterData);
+
+  if (viewerId && letter.senderId !== viewerId) {
+    const viewData = readJSON('letterViews.json') || { views: [] };
+    viewData.views.push({
+      id: generateId(),
+      letterId: id,
+      viewerId,
+      letterOwnerId: letter.senderId,
+      createdAt: new Date().toISOString()
+    });
+    writeJSON('letterViews.json', viewData);
   }
 
   const displayLetter = {

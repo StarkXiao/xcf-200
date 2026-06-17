@@ -1,5 +1,5 @@
 import api from '@/utils/api';
-import type { User, Letter, UserStats, ApiResponse } from '@/types';
+import type { User, Letter, UserStats, ApiResponse, Interaction, InteractionTypeStats, InteractionEmotionStat, InteractionQueryParams } from '@/types';
 
 interface ProfileData {
   username?: string;
@@ -44,6 +44,20 @@ export const userApi = {
 
   getStats: async (userId: string): Promise<{ success: boolean; data: UserStats }> => {
     const response = await api.get(`/user/${userId}/stats`);
+    return response.data;
+  },
+
+  getInteractions: async (
+    userId: string,
+    params?: InteractionQueryParams
+  ): Promise<{
+    success: boolean;
+    data: Interaction[];
+    stats: InteractionTypeStats;
+    emotionStats: InteractionEmotionStat[];
+    total: number;
+  }> => {
+    const response = await api.get(`/user/${userId}/interactions`, { params });
     return response.data;
   },
 };

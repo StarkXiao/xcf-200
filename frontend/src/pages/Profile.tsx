@@ -4,7 +4,8 @@ import {
   Mail, Heart, Bookmark, Settings, Calendar, Sparkles, PenLine,
   User as UserIcon, Edit3, LogOut, ChevronRight, FileText, MessageCircle,
   Route, AlertTriangle, ExternalLink, Award, Trophy, Plus, Trash2,
-  FolderOpen, Bell, Check, CheckSquare, Square, Move, BarChart3, Eye
+  FolderOpen, Bell, Check, CheckSquare, Square, Move, BarChart3, Eye,
+  Zap, Filter, Clock, ArrowUpDown
 } from 'lucide-react';
 import LetterCard from '@/components/Letter/LetterCard';
 import MailRouteStatsCard from '@/components/MailRoute/MailRouteStatsCard';
@@ -23,10 +24,10 @@ import type { DraftStats } from '@/types';
 import useAuthStore from '@/store/useAuthStore';
 import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
-import type { Letter, UserStats, Honor, FavoriteStats, FavoriteReminder, FavoriteGroup } from '@/types';
+import type { Letter, UserStats, Honor, FavoriteStats, FavoriteReminder, FavoriteGroup, Interaction, InteractionTypeStats, InteractionEmotionStat, InteractionType, InteractionQueryParams } from '@/types';
 import { formatDate, getRecipientTypeLabel, EXCEPTION_INFO } from '@/utils/helpers';
 
-type TabType = 'letters' | 'favorites' | 'mailroute' | 'honors' | 'edit';
+type TabType = 'letters' | 'favorites' | 'mailroute' | 'honors' | 'interactions' | 'edit';
 type FavoritesSubTab = 'list' | 'groups' | 'reminders' | 'stats';
 
 const avatarOptions = ['🌟', '🌙', '🌈', '🦋', '🌸', '🌊', '⭐', '🐱', '🦄', '🌻', '☕', '🎨', '🍀', '🌠', '🔮', '🌌'];
@@ -80,6 +81,14 @@ export default function Profile() {
   const [reminderLetter, setReminderLetter] = useState<FavLetter | null>(null);
   const [reminders, setReminders] = useState<ReminderWithLetter[]>([]);
   const [favStats, setFavStats] = useState<FavoriteStats | null>(null);
+
+  const [interactions, setInteractions] = useState<Interaction[]>([]);
+  const [interactionStats, setInteractionStats] = useState<InteractionTypeStats | null>(null);
+  const [interactionEmotions, setInteractionEmotions] = useState<InteractionEmotionStat[]>([]);
+  const [interactionFilter, setInteractionFilter] = useState<InteractionQueryParams>({
+    sort: 'latest',
+  });
+  const [interactionLoading, setInteractionLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -158,6 +167,30 @@ export default function Profile() {
     showToast({ type: 'success', message: '下次再见啦，愿你星空常伴 ✨' });
     setTimeout(() => navigate('/login'), 500);
   };
+
+  const fetchInteractions = async () => {
+    if (!user) return;
+    try {
+      setInteractionLoading(true);
+      const res = await userApi.getInteractions(user.id, interactionFilter);
+      if (res.success) {
+        setInteractions(res.data);
+        setInteractionStats(res.stats);
+        setInteractionEmotions(res.emotionStats);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setInteractionLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'interactions' && user) {
+      fetchInteractions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, interactionFilter, user?.id]);
 
   const refreshFavorites = async () => {
     if (!user) return;
@@ -461,6 +494,7 @@ export default function Profile() {
             <div className="glass-card p-1.5 inline-flex w-full flex-wrap">
               {[
                 { key: 'letters', label: '我写的信', icon: Mail },
+                { key: 'interactions', label: '我的互动', icon: Zap },
                 { key: 'mailroute', label: '邮路追踪', icon: Route },
                 { key: 'favorites', label: '我的收藏', icon: Bookmark },
                 { key: 'honors', label: '我的荣誉', icon: Trophy },
@@ -471,6 +505,7 @@ export default function Profile() {
                 const badgeCount = exceptionLetters.filter(e => e.tracking?.hasActiveException).length;
                 const honorsBadge = tab.key === 'honors' && honors.length > 0;
                 const favBadge = tab.key === 'favorites' && favStats?.pendingReminders && favStats.pendingReminders > 0;
+                const interactionBadge = tab.key === 'interactions' && interactionStats && interactionStats.total > 0;
                 return (
                   <button
                     key={tab.key}
@@ -496,6 +531,11 @@ export default function Profile() {
                     {favBadge && (
                       <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-nebula-orange text-white text-[10px] font-bold flex items-center justify-center shadow-glow-sm">
                         {favStats?.pendingReminders}
+                      </span>
+                    )}
+                    {interactionBadge && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-aurora text-white text-[10px] font-bold flex items-center justify-center shadow-glow-sm">
+                        {interactionStats?.total}
                       </span>
                     )}
                   </button>
@@ -854,6 +894,273 @@ export default function Profile() {
 
                 {favSubTab === 'stats' && (
                   <FavoritesStats stats={favStats} loading={loadingLocal} />
+                )}
+              </div>
+            )}
+
+            {activeTab === 'interactions' && (
+              <div className="animate-fade-in space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h3 className="font-serif-sc text-xl font-semibold text-white flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-aurora" />
+                    我的互动中心
+                    <span className="text-sm font-normal text-white/50">
+                      ({interactionStats?.total || 0} 条互动)
+                    </span>
+                  </h3>
+                  <button
+                    onClick={fetchInteractions}
+                    className="btn-secondary py-2 px-4 text-sm flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    刷新数据
+                  </button>
+                </div>
+
+                {interactionStats && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { key: 'total', label: '全部互动', icon: Zap, color: 'text-aurora', bg: 'bg-aurora/15', count: interactionStats.total },
+                      { key: 'like', label: '收到点赞', icon: Heart, color: 'text-nebula-pink', bg: 'bg-nebula-pink/15', count: interactionStats.like },
+                      { key: 'reply', label: '收到回信', icon: MessageCircle, color: 'text-starlight', bg: 'bg-starlight/15', count: interactionStats.reply },
+                      { key: 'favorite', label: '我的收藏', icon: Bookmark, color: 'text-nebula-mint', bg: 'bg-nebula-mint/15', count: interactionStats.favorite },
+                      { key: 'view', label: '被浏览', icon: Eye, color: 'text-nebula-purple', bg: 'bg-nebula-purple/15', count: interactionStats.view },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      const isSelected = interactionFilter.type === item.key || (!interactionFilter.type && item.key === 'total');
+                      return (
+                        <button
+                          key={item.key}
+                          onClick={() => {
+                            setInteractionFilter(prev => ({
+                              ...prev,
+                              type: item.key === 'total' ? undefined : (item.key as InteractionType),
+                            }));
+                          }}
+                          className={`glass-card p-4 text-center transition-all ${
+                            isSelected ? 'ring-2 ring-aurora/50 bg-white/10' : 'hover:bg-white/5'
+                          }`}
+                        >
+                          <div className={`w-10 h-10 mx-auto mb-2 rounded-xl ${item.bg} flex items-center justify-center`}>
+                            <Icon className={`w-5 h-5 ${item.color}`} />
+                          </div>
+                          <div className="text-2xl font-bold text-white mb-0.5">
+                            {item.count || 0}
+                          </div>
+                          <div className="text-xs text-white/60">{item.label}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="glass-card p-4 space-y-4">
+                  <div className="flex items-center gap-2 text-sm text-white/70">
+                    <Filter className="w-4 h-4" />
+                    <span className="font-medium">筛选条件</span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-white/50" />
+                      <select
+                        value={interactionFilter.timeRange || ''}
+                        onChange={(e) => {
+                          setInteractionFilter(prev => ({
+                            ...prev,
+                            timeRange: e.target.value ? (e.target.value as any) : undefined,
+                          }));
+                        }}
+                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/70 focus:outline-none focus:border-aurora/50"
+                      >
+                        <option value="">全部时间</option>
+                        <option value="today">今天</option>
+                        <option value="week">最近一周</option>
+                        <option value="month">最近一月</option>
+                        <option value="year">最近一年</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <ArrowUpDown className="w-4 h-4 text-white/50" />
+                      <select
+                        value={interactionFilter.sort || 'latest'}
+                        onChange={(e) => {
+                          setInteractionFilter(prev => ({
+                            ...prev,
+                            sort: e.target.value as 'latest' | 'oldest',
+                          }));
+                        }}
+                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white/70 focus:outline-none focus:border-aurora/50"
+                      >
+                        <option value="latest">最新优先</option>
+                        <option value="oldest">最早优先</option>
+                      </select>
+                    </div>
+
+                    {(interactionFilter.type || interactionFilter.timeRange || interactionFilter.emotion) && (
+                      <button
+                        onClick={() => {
+                          setInteractionFilter({ sort: 'latest' });
+                        }}
+                        className="text-xs text-aurora hover:text-aurora/80 transition-colors"
+                      >
+                        清除筛选
+                      </button>
+                    )}
+                  </div>
+
+                  {interactionEmotions.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-white/50">按情绪筛选：</div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => {
+                            setInteractionFilter(prev => ({
+                              ...prev,
+                              emotion: undefined,
+                            }));
+                          }}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            !interactionFilter.emotion
+                              ? 'bg-aurora/20 text-aurora border border-aurora/40'
+                              : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                          }`}
+                        >
+                          全部情绪
+                        </button>
+                        {interactionEmotions.map((emo) => (
+                          <button
+                            key={emo.id}
+                            onClick={() => {
+                              setInteractionFilter(prev => ({
+                                ...prev,
+                                emotion: prev.emotion === emo.name ? undefined : emo.name,
+                              }));
+                            }}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                              interactionFilter.emotion === emo.name
+                                ? 'shadow-lg'
+                                : 'hover:shadow-md'
+                            }`}
+                            style={{
+                              backgroundColor: interactionFilter.emotion === emo.name ? emo.color : `${emo.color}18`,
+                              color: interactionFilter.emotion === emo.name ? '#fff' : emo.color,
+                              border: interactionFilter.emotion === emo.name ? 'none' : `1px solid ${emo.color}30`,
+                              boxShadow: interactionFilter.emotion === emo.name ? `0 4px 20px ${emo.color}50` : undefined,
+                            }}
+                          >
+                            <span>{emo.icon}</span>
+                            {emo.name}
+                            <span
+                              className="rounded-full px-1.5 py-0.5 text-[10px]"
+                              style={{
+                                backgroundColor: interactionFilter.emotion === emo.name ? 'rgba(255,255,255,0.25)' : `${emo.color}25`,
+                              }}
+                            >
+                              {emo.count}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {interactionLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="h-24 rounded-2xl bg-white/5 animate-pulse" />
+                    ))}
+                  </div>
+                ) : interactions.length === 0 ? (
+                  <div className="glass-card p-12 sm:p-16 text-center">
+                    <div className="text-5xl mb-4">💫</div>
+                    <p className="text-lg text-white/70 font-serif-sc mb-2">
+                      还没有互动记录...
+                    </p>
+                    <p className="text-sm text-white/50 mb-6">
+                      去信件广场逛逛，和其他星人互动吧
+                    </p>
+                    <Link to="/" className="btn-primary inline-flex items-center gap-2">
+                      <ChevronRight className="w-4 h-4" />
+                      去信件广场
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {interactions.map((interaction) => {
+                      const typeConfig: Record<InteractionType, { label: string; color: string; bg: string }> = {
+                        like: { label: '点赞', color: 'text-nebula-pink', bg: 'bg-nebula-pink/15' },
+                        reply: { label: '回信', color: 'text-starlight', bg: 'bg-starlight/15' },
+                        favorite: { label: '收藏', color: 'text-nebula-mint', bg: 'bg-nebula-mint/15' },
+                        view: { label: '浏览', color: 'text-nebula-purple', bg: 'bg-nebula-purple/15' },
+                      };
+                      const config = typeConfig[interaction.type];
+
+                      return (
+                        <Link
+                          key={interaction.id}
+                          to={`/letter/${interaction.letterId}`}
+                          className="glass-card p-4 sm:p-5 block hover:bg-white/5 transition-all group border border-transparent hover:border-aurora/30"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className={`w-11 h-11 rounded-xl ${config.bg} flex items-center justify-center shrink-0`}>
+                              <span className="text-xl">{interaction.icon}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.color}`}>
+                                  {config.label}
+                                </span>
+                                {interaction.letterEmotions && interaction.letterEmotions.slice(0, 3).map((emo, idx) => (
+                                  <span key={idx} className="text-xs text-white/50">
+                                    {emo}
+                                  </span>
+                                ))}
+                                <span className="text-xs text-white/40 ml-auto">
+                                  {formatDate(interaction.createdAt)}
+                                </span>
+                              </div>
+                              <h5 className="font-medium text-white truncate group-hover:text-aurora transition-colors">
+                                {interaction.letterTitle}
+                              </h5>
+                              <p className="text-sm text-white/60 mt-1 line-clamp-2">
+                                {interaction.description}
+                              </p>
+                              {interaction.type === 'reply' && interaction.replyContent && (
+                                <div className="mt-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs text-white/50">{interaction.replySender}</span>
+                                    {interaction.replyEmotion && (
+                                      <span className="text-xs text-white/40">· {interaction.replyEmotion}</span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-white/70 line-clamp-2">
+                                    {interaction.replyContent}
+                                  </p>
+                                </div>
+                              )}
+                              {interaction.type === 'view' && interaction.viewCount && (
+                                <div className="mt-2 flex items-center gap-4 text-xs text-white/50">
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="w-3.5 h-3.5" />
+                                    本次筛选浏览 {interaction.viewCount} 次
+                                  </span>
+                                  {interaction.totalViews && (
+                                    <span className="flex items-center gap-1">
+                                      累计浏览 {interaction.totalViews} 次
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-aurora group-hover:translate-x-0.5 transition-all shrink-0 mt-1" />
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             )}
