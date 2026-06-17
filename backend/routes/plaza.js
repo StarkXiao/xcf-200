@@ -163,8 +163,8 @@ router.get('/hot-ranking', (req, res) => {
   }
 
   letters.sort((a, b) => {
-    const scoreA = (b.likes || 0) * 3 + ((b.replies ? b.replies.length : 0)) * 2 + (b.views || 0);
-    const scoreB = (a.likes || 0) * 3 + ((a.replies ? a.replies.length : 0)) * 2 + (a.views || 0);
+    const scoreA = (a.likes || 0) * 3 + ((a.replies ? a.replies.length : 0)) * 2 + (a.views || 0);
+    const scoreB = (b.likes || 0) * 3 + ((b.replies ? b.replies.length : 0)) * 2 + (b.views || 0);
     return scoreB - scoreA;
   });
 

@@ -56,7 +56,7 @@ function ActivityCard({ activity }: { activity: Activity }) {
   
   return (
     <Link
-      to={`/activity/${activity.id}`}
+      to={`/activities/${activity.id}`}
       className="block group"
     >
       <div className="relative flex gap-4 p-4 rounded-2xl bg-gradient-to-r from-nebula-purple/10 to-aurora/10 border border-nebula-purple/20 hover:border-nebula-purple/40 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-nebula-purple/10">

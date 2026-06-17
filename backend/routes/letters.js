@@ -516,7 +516,8 @@ router.get('/', (req, res) => {
   let letters = [...letterData.letters].filter(l => l.isPublic);
 
   if (emotion) {
-    letters = letters.filter(l => l.emotions.includes(emotion));
+    const emotions = Array.isArray(emotion) ? emotion : [emotion];
+    letters = letters.filter(l => l.emotions && emotions.some(e => l.emotions.includes(e)));
   }
 
   if (keyword) {

@@ -53,7 +53,7 @@ function FeaturedCard({ item, index }: { item: PlazaFeatured; index: number }) {
   const CardWrapper = ({ children }: { children: React.ReactNode }) => {
     if (isActivity && item.targetId) {
       return (
-        <Link to={`/activity/${item.targetId}`} className="block group">
+        <Link to={`/activities/${item.targetId}`} className="block group">
           {children}
         </Link>
       );

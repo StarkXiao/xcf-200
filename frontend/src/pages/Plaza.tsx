@@ -172,7 +172,7 @@ export default function Plaza() {
       const currentPage = reset ? 1 : page;
 
       const selectedTopicData = topics.find((t) => t.id === selectedTopic);
-      let emotionFilter = selectedEmotion || undefined;
+      let emotionFilter: string | string[] | undefined = selectedEmotion || undefined;
 
       if (
         selectedTopicData &&
@@ -181,7 +181,7 @@ export default function Plaza() {
         selectedTopicData.relatedEmotions.length > 0 &&
         !selectedEmotion
       ) {
-        emotionFilter = selectedTopicData.relatedEmotions[0];
+        emotionFilter = selectedTopicData.relatedEmotions;
       }
 
       const res = await lettersApi.getLetters({
@@ -717,15 +717,25 @@ export default function Plaza() {
                   <Filter className="w-4 h-4 text-white/60" />
                   <span className="text-sm text-white/60">筛选条件：</span>
                   {selectedTopic !== 'topic_all' && selectedTopicData && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-nebula-purple/20 text-nebula-purple/90 text-xs border border-nebula-purple/30">
-                      {selectedTopicData.icon} {selectedTopicData.name}
-                      <button
-                        onClick={() => setSelectedTopic('topic_all')}
-                        className="hover:text-white transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
+                    <>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-nebula-purple/20 text-nebula-purple/90 text-xs border border-nebula-purple/30">
+                        {selectedTopicData.icon} {selectedTopicData.name}
+                        <button
+                          onClick={() => setSelectedTopic('topic_all')}
+                          className="hover:text-white transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                      {selectedTopicData.relatedEmotions?.map((emo) => (
+                        <span
+                          key={emo}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-nebula-purple/10 text-nebula-purple/70 text-[10px] border border-nebula-purple/20"
+                        >
+                          🏷️ {emo}
+                        </span>
+                      ))}
+                    </>
                   )}
                   {selectedEmotion && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-nebula-purple/20 text-nebula-purple/90 text-xs border border-nebula-purple/30">

@@ -20,7 +20,7 @@ import type {
 interface LettersQueryParams {
   page?: number;
   limit?: number;
-  emotion?: string;
+  emotion?: string | string[];
   keyword?: string;
   sort?: 'latest' | 'popular' | 'most_replied';
   minLikes?: number;
