@@ -23,6 +23,7 @@ import { activitiesApi } from '@/api/activities';
 import { favoritesApi, type GroupWithCount } from '@/api/favorites';
 import { draftsApi } from '@/api/drafts';
 import { sharesApi } from '@/api/shares';
+import { useShareTracking } from '@/hooks/useShare';
 import type { DraftStats, SharePosterData, ShareStats } from '@/types';
 import useAuthStore from '@/store/useAuthStore';
 import useFavoriteStore from '@/store/useFavoriteStore';
@@ -57,6 +58,7 @@ export default function Profile() {
   const { user, isAuthenticated, logout, updateUser } = useAuthStore();
   const { showToast, setLoading } = useUIStore();
   const favStore = useFavoriteStore();
+  const { pendingShareView, shareId } = useShareTracking();
 
   const [activeTab, setActiveTab] = useState<TabType>('letters');
   const [userLetters, setUserLetters] = useState<Letter[]>([]);
@@ -150,6 +152,9 @@ export default function Profile() {
       if (remindersRes.success) setReminders(remindersRes.data as ReminderWithLetter[]);
       if (draftStatsRes.success) setDraftStats(draftStatsRes.data);
       fetchUserShareStats();
+      if (shareId && user?.id) {
+        pendingShareView('profile', user.id);
+      }
     } catch (err) {
       showToast({ type: 'error', message: '加载数据失败' });
     } finally {
@@ -438,6 +443,35 @@ export default function Profile() {
   return (
     <div className="relative z-10 py-8 sm:py-12">
       <div className="container max-w-6xl">
+        {shareId && (
+          <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-nebula-purple/20 to-aurora/20 border border-nebula-purple/30 flex items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-aurora/20 flex items-center justify-center">
+                <ExternalLink className="w-5 h-5 text-aurora" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">
+                  ✨ 你正在通过好友分享的链接访问 {user.username} 的星阁
+                </p>
+                <p className="text-xs text-white/50">
+                  每一次分享都让温暖被更多人看见
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('share');
+                window.history.replaceState({}, '', url.toString());
+                window.location.reload();
+              }}
+              className="text-xs px-3 py-1.5 rounded-lg bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all"
+            >
+              移除参数
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 animate-fade-in-up">
           <div className="lg:col-span-1 space-y-6">
             <div className="glass-card p-6 sm:p-7 relative overflow-hidden">

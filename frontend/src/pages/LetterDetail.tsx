@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Heart, BookmarkPlus, Bookmark, ArrowLeft, Send, MessageSquare, Sparkles, Share2, Bell, FolderOpen, Users, Flag, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Heart, BookmarkPlus, Bookmark, ArrowLeft, Send, MessageSquare, Sparkles, Share2, Bell, FolderOpen, Users, Flag, AlertTriangle, BarChart3, ExternalLink } from 'lucide-react';
 import LetterPaper from '@/components/Letter/LetterPaper';
 import ReplyCard from '@/components/Letter/ReplyCard';
 import ReplyCandidatePool from '@/components/Letter/ReplyCandidatePool';
@@ -18,6 +18,7 @@ import { lettersApi } from '@/api/letters';
 import { reportsApi } from '@/api/reports';
 import { favoritesApi, type GroupWithCount } from '@/api/favorites';
 import { sharesApi } from '@/api/shares';
+import { useShareTracking } from '@/hooks/useShare';
 import useAuthStore from '@/store/useAuthStore';
 import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
@@ -31,6 +32,7 @@ export default function LetterDetail() {
   const { user, isAuthenticated } = useAuthStore();
   const { showToast, setLoading } = useUIStore();
   const favStore = useFavoriteStore();
+  const { pendingShareView, shareId } = useShareTracking();
 
   const [letter, setLetter] = useState<Letter | null>(null);
   const [loading, setLoadingLocal] = useState(true);
@@ -65,6 +67,9 @@ export default function LetterDetail() {
       if (res.success && res.data) {
         setLetter(res.data);
         setLikes(res.data.likes);
+        if (shareId) {
+          pendingShareView('letter', id);
+        }
       } else {
         showToast({ type: 'error', message: '信件不存在' });
         setTimeout(() => navigate('/'), 1500);
@@ -307,6 +312,35 @@ export default function LetterDetail() {
   return (
     <div className="relative z-10 py-8 sm:py-12">
       <div className="container max-w-6xl">
+        {shareId && (
+          <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-nebula-purple/20 to-aurora/20 border border-nebula-purple/30 flex items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-nebula-purple/20 flex items-center justify-center">
+                <ExternalLink className="w-5 h-5 text-aurora" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">
+                  ✨ 你正在通过好友分享的链接访问此信件
+                </p>
+                <p className="text-xs text-white/50">
+                  每次分享都让温暖传递得更远
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('share');
+                window.history.replaceState({}, '', url.toString());
+                window.location.reload();
+              }}
+              className="text-xs px-3 py-1.5 rounded-lg bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all"
+            >
+              移除参数
+            </button>
+          </div>
+        )}
+
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-8 group"
