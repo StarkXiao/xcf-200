@@ -78,21 +78,21 @@ const CombatSkillBar: React.FC<CombatSkillBarProps> = ({
     if (!user?.id) return;
     if (!btn.canUse) {
       if (btn.isOnCooldown) {
-        showToast({ id: String(Date.now()), type: 'warning', message: `技能冷却中，还需 ${cooldownTimers[btn.skillId] || btn.cooldownRemaining} 秒` });
+        showToast({ type: 'warning', message: `技能冷却中，还需 ${cooldownTimers[btn.skillId] || btn.cooldownRemaining} 秒` });
       } else if (!btn.hasEnoughAura) {
-        showToast({ id: String(Date.now()), type: 'error', message: `灵气不足，需要 ${btn.finalAuraCost} 点` });
+        showToast({ type: 'error', message: `灵气不足，需要 ${btn.finalAuraCost} 点` });
       } else if (!btn.isUnlocked) {
-        showToast({ id: String(Date.now()), type: 'warning', message: '技能未解锁，请前往技能树学习' });
+        showToast({ type: 'warning', message: '技能未解锁，请前往技能树学习' });
       }
       return;
     }
 
     const result = await useSkill(user.id, btn.skillId, trigger, targetId);
     if (result) {
-      showToast({ id: String(Date.now()), type: 'success', message: result.message, duration: 3000 });
+      showToast({ type: 'success', message: result.message, duration: 3000 });
     } else {
       const err = useSkillStore.getState().error;
-      if (err) showToast({ id: String(Date.now()), type: 'error', message: err });
+      if (err) showToast({ type: 'error', message: err });
     }
   };
 

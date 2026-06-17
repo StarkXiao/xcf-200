@@ -121,12 +121,11 @@ const useSkillStore = create<SkillState>()((set, get) => ({
   useSkill: async (userId, skillId, trigger, targetId) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await skillsApi.useSkill(userId, { skillId, trigger, targetId });
+      const res = await skillsApi.useSkill(userId, { userId, skillId, trigger, targetId });
       if (res.data.success && res.data.data) {
         const result = res.data.data;
         const newAura = get().aura ? { ...get().aura! } : { current: 0, max: 100, regenRate: 2, lastRegenAt: new Date().toISOString() };
         newAura.current = result.auraRemaining;
-        newAura.max = result.auraMax;
         newAura.lastRegenAt = new Date().toISOString();
         set({ aura: newAura, lastUseResult: result });
         await get().fetchCombatButtons(userId, trigger);

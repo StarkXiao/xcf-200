@@ -1520,6 +1520,12 @@ export interface SkillTreeData {
   aura: UserAuraState;
   totalSkillPoints: number;
   availableSkillPoints: number;
+  userLevel: number;
+  starProgress: {
+    current: number;
+    next: number;
+    points: number;
+  };
 }
 
 export interface CombatButtonData {

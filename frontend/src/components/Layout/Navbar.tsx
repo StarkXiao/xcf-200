@@ -16,7 +16,7 @@ const navItems = [
   { path: '/parallel-match', label: '平行匹配', icon: Atom },
   { path: '/guardian-station', label: '匿名守护站', icon: Shield },
   { path: '/achievements', label: '成就中心', icon: Trophy },
-  { path: '/skill-tree', label: '星辰功法', icon: Wand2 },
+  { path: '/skill-tree', label: '星辰功法', icon: Sparkles },
   { path: '/healing', label: '情绪疗愈室', icon: HeartPulse },
   { path: '/emotions', label: '情绪星河', icon: Tag },
   { path: '/archive', label: '星愿档案馆', icon: Archive },

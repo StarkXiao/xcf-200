@@ -25,7 +25,7 @@ const SkillTreePage: React.FC = () => {
 
   useEffect(() => {
     if (error && !toastShown) {
-      showToast({ id: String(Date.now()), type: 'error', message: error });
+      showToast({ type: 'error', message: error });
       clearError();
       setToastShown(true);
       setTimeout(() => setToastShown(false), 100);
@@ -37,14 +37,13 @@ const SkillTreePage: React.FC = () => {
     const result = await upgradeSkill(user.id, skill.id);
     if (result) {
       showToast({
-        id: String(Date.now()),
         type: 'success',
         message: `${skill.name} 升级到 Lv.${result.newLevel}！`,
         duration: 2500,
       });
     } else {
       const err = useSkillStore.getState().error;
-      if (err) showToast({ id: String(Date.now() + 1), type: 'error', message: err });
+      if (err) showToast({ type: 'error', message: err });
     }
   };
 
@@ -53,7 +52,6 @@ const SkillTreePage: React.FC = () => {
     const result = await selectBranch(user.id, skill.id, branch);
     if (result) {
       showToast({
-        id: String(Date.now()),
         type: 'success',
         message: `${skill.name} 已选择「${result.branchInfo.name}」之道！`,
         duration: 2500,
