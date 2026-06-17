@@ -6,7 +6,7 @@ interface EmotionTagProps {
   color?: string;
   count?: number;
   selected?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   onClick?: () => void;
   showCount?: boolean;
 }
@@ -61,6 +61,7 @@ export default function EmotionTag({
   const actualIcon = icon || defaultIcons[name] || '💫';
 
   const sizeClasses = {
+    xs: 'text-[10px] px-2 py-0.5 gap-1',
     sm: 'text-xs px-2.5 py-1 gap-1',
     md: 'text-sm px-3.5 py-1.5 gap-1.5',
     lg: 'text-base px-5 py-2.5 gap-2',
@@ -84,7 +85,7 @@ export default function EmotionTag({
         boxShadow: selected ? `0 4px 20px ${actualColor}50` : undefined,
       }}
     >
-      <span className={size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-lg'}>
+      <span className={size === 'xs' ? 'text-[10px]' : size === 'sm' ? 'text-xs' : size === 'md' ? 'text-sm' : 'text-lg'}>
         {actualIcon}
       </span>
       <span>{name}</span>

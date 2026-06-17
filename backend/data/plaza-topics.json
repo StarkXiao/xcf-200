@@ -1,0 +1,102 @@
+{
+  "topics": [
+    {
+      "id": "topic_all",
+      "name": "全部",
+      "icon": "✨",
+      "color": "#FFD700",
+      "description": "浏览广场所有信件",
+      "letterCount": 0,
+      "isDefault": true,
+      "sortOrder": 1,
+      "isHot": false
+    },
+    {
+      "id": "topic_star_dream",
+      "name": "星河梦境",
+      "icon": "🌌",
+      "color": "#9333EA",
+      "description": "记录那些关于星空、梦境与幻想的故事",
+      "letterCount": 0,
+      "isDefault": false,
+      "sortOrder": 2,
+      "isHot": true,
+      "relatedEmotions": ["思念", "温暖", "希望"],
+      "relatedActivityId": "act_001"
+    },
+    {
+      "id": "topic_time_letter",
+      "name": "时光信笺",
+      "icon": "⏳",
+      "color": "#F59E0B",
+      "description": "写给未来的人写一封信",
+      "letterCount": 0,
+      "isDefault": false,
+      "sortOrder": 3,
+      "isHot": true,
+      "relatedEmotions": ["思念", "期待", "温暖"],
+      "relatedActivityId": "act_002"
+    },
+    {
+      "id": "topic_parallel_world",
+      "name": "平行世界",
+      "icon": "🪞",
+      "color": "#06B6D4",
+      "description": "探索平行宇宙中的另一个自己",
+      "letterCount": 0,
+      "isDefault": false,
+      "sortOrder": 4,
+      "isHot": false,
+      "relatedEmotions": ["好奇", "思念", "神秘"],
+      "relatedActivityId": "act_003"
+    },
+    {
+      "id": "topic_healing",
+      "name": "治愈小站",
+      "icon": "🌸",
+      "color": "#EC4899",
+      "description": "温暖人心的文字",
+      "letterCount": 0,
+      "isDefault": false,
+      "sortOrder": 5,
+      "isHot": true,
+      "relatedEmotions": ["治愈", "温暖", "平静"]
+    },
+    {
+      "id": "topic_growth",
+      "name": "成长日记",
+      "icon": "🌱",
+      "color": "#10B981",
+      "description": "记录成长路上的点滴",
+      "letterCount": 0,
+      "isDefault": false,
+      "sortOrder": 6,
+      "isHot": false,
+      "relatedEmotions": ["希望", "平静", "勇气"]
+    },
+    {
+      "id": "topic_night_thoughts",
+      "name": "深夜思绪",
+      "icon": "🌙",
+      "color": "#6366F1",
+      "description": "夜晚总是特别多",
+      "letterCount": 0,
+      "isDefault": false,
+      "sortOrder": 7,
+      "isHot": false,
+      "relatedEmotions": ["思念", "孤独", "平静"]
+    },
+    {
+      "id": "topic_gratitude",
+      "name": "感恩有你",
+      "icon": "💝",
+      "color": "#EF4444",
+      "description": "想对重要的人说声谢谢",
+      "letterCount": 0,
+      "isDefault": false,
+      "sortOrder": 8,
+      "isHot": false,
+      "relatedEmotions": ["温暖", "感动", "幸福"]
+    }
+  ]
+}

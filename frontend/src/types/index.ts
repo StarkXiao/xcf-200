@@ -1588,3 +1588,63 @@ export interface UserSkillOverview {
   };
   categoryBreakdown: Record<SkillCategory, { unlocked: number; total: number; totalLevels: number }>;
 }
+
+export interface PlazaTopic {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+  letterCount: number;
+  isDefault: boolean;
+  sortOrder: number;
+  isHot: boolean;
+  relatedEmotions?: string[];
+  relatedActivityId?: string;
+}
+
+export type FeaturedItemType = 'letter' | 'activity' | 'topic';
+
+export interface PlazaFeatured {
+  id: string;
+  type: FeaturedItemType;
+  targetId: string;
+  title: string;
+  description: string;
+  coverImage: string;
+  tag: string;
+  tagColor: string;
+  sortOrder: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+  target?: any;
+}
+
+export interface HotRankingItem {
+  rank: number;
+  letterId: string;
+  title: string;
+  senderName: string;
+  emotions: string[];
+  likes: number;
+  repliesCount: number;
+  views: number;
+  createdAt: string;
+  heatScore: number;
+}
+
+export type HotRankingType = 'daily' | 'weekly' | 'monthly' | 'all';
+
+export interface PlazaOverviewData {
+  topics: PlazaTopic[];
+  featured: PlazaFeatured[];
+  activities: Activity[];
+  hotRanking: HotRankingItem[];
+  stats: {
+    totalLetters: number;
+    totalTopics: number;
+    activeActivities: number;
+    featuredCount: number;
+  };
+}

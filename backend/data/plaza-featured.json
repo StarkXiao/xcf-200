@@ -1,0 +1,46 @@
+{
+  "featured": [
+    {
+      "id": "feat_001",
+      "type": "letter",
+      "targetId": "",
+      "title": "给五年后自己的一封信",
+      "description": "这封信穿越了时间的长河，送给未来的自己。愿你依然保持初心，勇敢追梦。",
+      "coverImage": "💌",
+      "tag": "编辑精选",
+      "tagColor": "#FFD700",
+      "sortOrder": 1,
+      "startTime": "2026-06-01T00:00:00.000Z",
+      "endTime": "2026-12-31T23:59:59.000Z",
+      "isActive": true
+    },
+    {
+      "id": "feat_002",
+      "type": "letter",
+      "targetId": "",
+      "title": "星河下的思念",
+      "description": "每一颗星星都是我对你的思念，在无尽的宇宙中闪烁。",
+      "coverImage": "🌟",
+      "tag": "热门推荐",
+      "tagColor": "#F59E0B",
+      "sortOrder": 2,
+      "startTime": "2026-06-10T00:00:00.000Z",
+      "endTime": "2026-07-10T23:59:59.000Z",
+      "isActive": true
+    },
+    {
+      "id": "feat_003",
+      "type": "activity",
+      "targetId": "act_001",
+      "title": "星河梦境·第一届主题征文大赛",
+      "description": "写下你心中最璀璨的故事，赢取专属荣誉徽章！",
+      "coverImage": "🌌",
+      "tag": "火热进行中",
+      "tagColor": "#EC4899",
+      "sortOrder": 3,
+      "startTime": "2026-06-01T00:00:00.000Z",
+      "endTime": "2026-06-30T23:59:59.000Z",
+      "isActive": true
+    }
+  ]
+}

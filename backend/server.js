@@ -20,6 +20,7 @@ const favoritesRoutes = require('./routes/favorites');
 const draftRoutes = require('./routes/drafts');
 const skillRoutes = require('./routes/skills');
 const growthProfileRoutes = require('./routes/growthProfile');
+const plazaRoutes = require('./routes/plaza');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -45,6 +46,7 @@ app.use('/api/favorites', favoritesRoutes);
 app.use('/api/drafts', draftRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/growth-profile', growthProfileRoutes);
+app.use('/api/plaza', plazaRoutes);
 
 app.get('/api', (req, res) => {
   res.json({ 
