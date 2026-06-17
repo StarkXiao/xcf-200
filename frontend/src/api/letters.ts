@@ -9,6 +9,8 @@ import type {
   DeliveryTracking,
   MailRouteStats,
   CompensationType,
+  LetterCollaborationData,
+  SubmitRelayReplyData,
 } from '@/types';
 
 interface LettersQueryParams {
@@ -124,6 +126,43 @@ export const lettersApi = {
 
   getExceptionLetters: async (userId: string): Promise<ApiResponse<ExceptionLetterItem[]>> => {
     const response = await api.get(`/letters/user/${userId}/exceptions`);
+    return response.data;
+  },
+
+  relayReply: async (
+    letterId: string,
+    data: SubmitRelayReplyData
+  ): Promise<ApiResponse<{ reply: Reply; replyTree: Reply[]; emotionChain: string[] }>> => {
+    const response = await api.post(`/letters/${letterId}/reply-relay`, data);
+    return response.data;
+  },
+
+  likeReply: async (
+    letterId: string,
+    replyId: string,
+    userId?: string
+  ): Promise<{ success: boolean; likes: number; message: string }> => {
+    const response = await api.post(`/letters/${letterId}/replies/${replyId}/like`, { userId });
+    return response.data;
+  },
+
+  featureReply: async (
+    letterId: string,
+    replyId: string,
+    featured: boolean,
+    userId?: string
+  ): Promise<ApiResponse<Reply>> => {
+    const response = await api.post(`/letters/${letterId}/replies/${replyId}/feature`, { featured, userId });
+    return response.data;
+  },
+
+  getCollaboration: async (letterId: string): Promise<ApiResponse<LetterCollaborationData & { replyTree: Reply[] }>> => {
+    const response = await api.get(`/letters/${letterId}/collaboration`);
+    return response.data;
+  },
+
+  getReplyTree: async (letterId: string): Promise<ApiResponse<Reply[]>> => {
+    const response = await api.get(`/letters/${letterId}/replies/tree`);
     return response.data;
   },
 };

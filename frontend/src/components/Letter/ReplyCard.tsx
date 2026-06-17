@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import type { Reply } from '@/types';
 import EmotionTag from '@/components/Emotion/EmotionTag';
+import RelayReplyForm from './RelayReplyForm';
 import { formatDate } from '@/utils/helpers';
-import { Globe2, Sparkles } from 'lucide-react';
+import { Globe2, Sparkles, Heart, Link2, Trophy, Crown } from 'lucide-react';
+import { lettersApi } from '@/api/letters';
+import useAuthStore from '@/store/useAuthStore';
+import useUIStore from '@/store/useUIStore';
 
 const parallelColors = [
   { from: 'from-aurora', to: 'from-nebula-purple', border: 'border-aurora/40', bg: 'bg-aurora/10' },
@@ -14,45 +19,208 @@ const parallelColors = [
 interface ReplyCardProps {
   reply: Reply;
   index?: number;
+  letterId: string;
+  onReplyUpdated?: (updatedReply: Reply) => void;
+  onRelaySubmitted?: () => void;
+  depth?: number;
 }
 
-export default function ReplyCard({ reply, index = 0 }: ReplyCardProps) {
+export default function ReplyCard({
+  reply,
+  index = 0,
+  letterId,
+  onReplyUpdated,
+  onRelaySubmitted,
+  depth = 0,
+}: ReplyCardProps) {
+  const { user } = useAuthStore();
+  const { showToast } = useUIStore();
   const colorScheme = parallelColors[index % parallelColors.length];
 
+  const [showRelayForm, setShowRelayForm] = useState(false);
+  const [submittingRelay, setSubmittingRelay] = useState(false);
+  const [likes, setLikes] = useState(reply.likes || 0);
+  const [isFeatured, setIsFeatured] = useState(reply.isFeatured || false);
+  const [likeLoading, setLikeLoading] = useState(false);
+  const [featureLoading, setFeatureLoading] = useState(false);
+
+  const handleLike = async () => {
+    if (likeLoading) return;
+    try {
+      setLikeLoading(true);
+      const res = await lettersApi.likeReply(letterId, reply.id, user?.id);
+      if (res.success) {
+        setLikes(res.likes);
+        showToast({ type: 'success', message: res.message });
+      }
+    } catch (err) {
+      showToast({ type: 'error', message: '操作失败' });
+    } finally {
+      setLikeLoading(false);
+    }
+  };
+
+  const handleToggleFeatured = async () => {
+    if (featureLoading) return;
+    try {
+      setFeatureLoading(true);
+      const res = await lettersApi.featureReply(letterId, reply.id, !isFeatured, user?.id);
+      if (res.success && res.data) {
+        setIsFeatured(res.data.isFeatured || false);
+        if (onReplyUpdated) onReplyUpdated(res.data);
+        showToast({ type: 'success', message: res.message || '操作成功' });
+      }
+    } catch (err) {
+      showToast({ type: 'error', message: '操作失败' });
+    } finally {
+      setFeatureLoading(false);
+    }
+  };
+
+  const handleRelaySubmit = async (data: { content: string; emotion: string; senderName?: string }) => {
+    try {
+      setSubmittingRelay(true);
+      const res = await lettersApi.relayReply(letterId, {
+        parentReplyId: reply.id,
+        ...data,
+        replierId: user?.id,
+      });
+      if (res.success) {
+        showToast({ type: 'success', message: res.message || '接力回复已送达' });
+        setShowRelayForm(false);
+        if (onRelaySubmitted) onRelaySubmitted();
+      }
+    } catch (err) {
+      showToast({ type: 'error', message: '回复失败，请重试' });
+    } finally {
+      setSubmittingRelay(false);
+    }
+  };
+
+  const marginLeft = depth > 0 ? 'ml-4 sm:ml-8' : '';
+
   return (
-    <div
-      className={`relative p-5 sm:p-6 rounded-2xl border backdrop-blur-sm animate-fade-in-up ${colorScheme.bg} ${colorScheme.border}`}
-      style={{ animationDelay: `${index * 0.1}s` }}
-    >
-      <div className={`absolute -top-3 left-6 h-6 w-6 rounded-t-full border-x-2 border-t-2 ${colorScheme.border} ${colorScheme.bg}`} />
+    <div className={marginLeft}>
+      <div
+        className={`relative p-5 sm:p-6 rounded-2xl border backdrop-blur-sm animate-fade-in-up ${
+          isFeatured
+            ? 'bg-gradient-to-br from-starlight/15 via-transparent to-aurora/10 border-starlight/40 ring-1 ring-starlight/20'
+            : `${colorScheme.bg} ${colorScheme.border}`
+        }`}
+        style={{ animationDelay: `${index * 0.05}s` }}
+      >
+        {isFeatured && (
+          <div className="absolute -top-3 right-4 flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-starlight/30 to-nebula-orange/30 border border-starlight/40 text-xs font-medium text-starlight">
+            <Crown className="w-3 h-3" />
+            <span>精选回复</span>
+          </div>
+        )}
 
-      <div className="flex items-start gap-4">
-        <div className={`w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-xl bg-gradient-to-br ${colorScheme.from}/20 ${colorScheme.to}/20 flex items-center justify-center shadow-inner`}>
-          <Globe2 className="w-6 h-6 sm:w-7 sm:h-7 text-white/80" />
-        </div>
+        {depth === 0 && (
+          <div className={`absolute -top-3 left-6 h-6 w-6 rounded-t-full border-x-2 border-t-2 ${colorScheme.border} ${colorScheme.bg}`} />
+        )}
 
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <h4 className="font-serif-sc text-base sm:text-lg font-semibold text-white">
-              {reply.senderName}
-            </h4>
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white/10 text-white/80 border border-white/10">
-              <Sparkles className="w-3 h-3" />
-              <span className="truncate max-w-[100px]">{reply.fromParallel}</span>
-            </div>
+        {depth > 0 && (
+          <div className="absolute -left-3 sm:-left-5 top-8 w-3 sm:w-5 h-px bg-gradient-to-r from-transparent to-white/20" />
+        )}
+
+        <div className="flex items-start gap-4">
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-gradient-to-br ${colorScheme.from}/20 ${colorScheme.to}/20 flex items-center justify-center shadow-inner ${depth > 0 ? 'w-8 h-8 sm:w-10 sm:h-10' : ''}`}>
+            <Globe2 className={`text-white/80 ${depth > 0 ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-5 h-5 sm:w-6 sm:h-6'}`} />
           </div>
 
-          <p className="text-sm sm:text-base text-white/85 leading-relaxed whitespace-pre-line mb-4">
-            {reply.content}
-          </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h4 className={`font-serif-sc font-semibold text-white ${depth > 0 ? 'text-sm sm:text-base' : 'text-base sm:text-lg'}`}>
+                {reply.senderName}
+              </h4>
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-white/10 text-white/80 border border-white/10">
+                <Sparkles className="w-3 h-3" />
+                <span className="truncate max-w-[100px]">{reply.fromParallel}</span>
+              </div>
+              {reply.chainOrder && reply.chainOrder > 0 && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-nebula-purple/15 text-nebula-purple border border-nebula-purple/20">
+                  <Link2 className="w-3 h-3" />
+                  <span>第 {reply.chainOrder + 1} 棒</span>
+                </div>
+              )}
+            </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {reply.emotion && (
-              <EmotionTag name={reply.emotion} size="sm" />
+            <p className={`text-white/85 leading-relaxed whitespace-pre-line mb-4 ${depth > 0 ? 'text-sm' : 'text-sm sm:text-base'}`}>
+              {reply.content}
+            </p>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {reply.emotion && <EmotionTag name={reply.emotion} size="sm" />}
+                <span className="text-xs text-white/50">{formatDate(reply.createdAt)}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handleLike}
+                  disabled={likeLoading}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs hover:bg-nebula-pink/10 text-white/60 hover:text-nebula-pink transition-all disabled:opacity-50"
+                >
+                  <Heart className="w-3.5 h-3.5" />
+                  <span>{likes}</span>
+                </button>
+
+                <button
+                  onClick={() => setShowRelayForm(!showRelayForm)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all ${
+                    showRelayForm
+                      ? 'bg-aurora/20 text-aurora border border-aurora/30'
+                      : 'hover:bg-aurora/10 text-white/60 hover:text-aurora'
+                  }`}
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span>接力</span>
+                </button>
+
+                {depth === 0 && (
+                  <button
+                    onClick={handleToggleFeatured}
+                    disabled={featureLoading}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all disabled:opacity-50 ${
+                      isFeatured
+                        ? 'bg-starlight/20 text-starlight border border-starlight/30'
+                        : 'hover:bg-starlight/10 text-white/60 hover:text-starlight'
+                    }`}
+                    title={isFeatured ? '取消精选' : '设为精选'}
+                  >
+                    <Trophy className="w-3.5 h-3.5" />
+                    <span>{isFeatured ? '精选' : '加精'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {showRelayForm && (
+              <RelayReplyForm
+                parentReplyId={reply.id}
+                parentSenderName={reply.senderName}
+                onSubmit={handleRelaySubmit}
+                onCancel={() => setShowRelayForm(false)}
+                submitting={submittingRelay}
+              />
             )}
-            <span className="text-xs text-white/50">
-              {formatDate(reply.createdAt)}
-            </span>
+
+            {reply.subReplies && reply.subReplies.length > 0 && (
+              <div className="mt-4 space-y-4">
+                {reply.subReplies.map((subReply, subIndex) => (
+                  <ReplyCard
+                    key={subReply.id}
+                    reply={subReply}
+                    index={subIndex}
+                    letterId={letterId}
+                    onReplyUpdated={onReplyUpdated}
+                    onRelaySubmitted={onRelaySubmitted}
+                    depth={depth + 1}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

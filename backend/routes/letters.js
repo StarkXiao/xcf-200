@@ -849,4 +849,311 @@ router.get('/user/:userId/exceptions', (req, res) => {
   });
 });
 
+function buildReplyTree(replies) {
+  const replyMap = {};
+  const rootReplies = [];
+
+  replies.forEach(reply => {
+    replyMap[reply.id] = { ...reply, subReplies: [] };
+  });
+
+  replies.forEach(reply => {
+    if (reply.parentReplyId && replyMap[reply.parentReplyId]) {
+      replyMap[reply.parentReplyId].subReplies.push(replyMap[reply.id]);
+    } else {
+      rootReplies.push(replyMap[reply.id]);
+    }
+  });
+
+  const sortReplies = (list) => {
+    list.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    list.forEach(r => {
+      if (r.subReplies && r.subReplies.length > 0) {
+        sortReplies(r.subReplies);
+      }
+    });
+  };
+  sortReplies(rootReplies);
+
+  return rootReplies;
+}
+
+function getEmotionChainForReply(replyId, allReplies) {
+  const chain = [];
+  let currentId = replyId;
+  const replyMap = {};
+  allReplies.forEach(r => { replyMap[r.id] = r; });
+
+  while (currentId && replyMap[currentId]) {
+    const r = replyMap[currentId];
+    chain.unshift({
+      replyId: r.id,
+      senderName: r.senderName,
+      emotion: r.emotion,
+      createdAt: r.createdAt,
+      order: chain.length
+    });
+    currentId = r.parentReplyId;
+  }
+
+  return chain;
+}
+
+function createNotification(userId, type, title, content, relatedId) {
+  const notifData = readJSON('notifications.json') || { notifications: [] };
+  const notification = {
+    id: generateId(),
+    userId,
+    type,
+    title,
+    content,
+    relatedId,
+    read: false,
+    createdAt: new Date().toISOString()
+  };
+  notifData.notifications.unshift(notification);
+  writeJSON('notifications.json', notifData);
+  return notification;
+}
+
+router.post('/:id/reply-relay', (req, res) => {
+  const { id } = req.params;
+  const { parentReplyId, senderName, content, emotion, replierId } = req.body;
+
+  if (!content) {
+    return res.status(400).json({ success: false, message: '回信内容不能为空' });
+  }
+  if (!parentReplyId) {
+    return res.status(400).json({ success: false, message: '缺少父回复ID' });
+  }
+
+  const letterData = readJSON('letters.json') || { letters: [] };
+  const letter = letterData.letters.find(l => l.id === id);
+
+  if (!letter) {
+    return res.status(404).json({ success: false, message: '信件不存在' });
+  }
+
+  letter.replies = letter.replies || [];
+  const parentReply = letter.replies.find(r => r.id === parentReplyId);
+  if (!parentReply) {
+    return res.status(404).json({ success: false, message: '父回复不存在' });
+  }
+
+  const chain = getEmotionChainForReply(parentReplyId, letter.replies);
+  const emotionChain = chain.map(c => c.emotion);
+  if (emotion) emotionChain.push(emotion);
+
+  const reply = {
+    id: generateId(),
+    letterId: id,
+    parentReplyId,
+    fromParallel: 'relay_' + Math.floor(Math.random() * 1000),
+    senderName: senderName || '接力回信者',
+    content,
+    emotion: emotion || parentReply.emotion || '温暖',
+    createdAt: new Date().toISOString(),
+    replierId: replierId || null,
+    likes: 0,
+    isFeatured: false,
+    chainOrder: chain.length,
+    emotionChain
+  };
+
+  letter.replies.push(reply);
+  writeJSON('letters.json', letterData);
+
+  const riskAnalysis = processContentRating(reply.id, 'reply', content, replierId);
+  createReplyReviewTask(reply.id, id, riskAnalysis.level, replierId);
+
+  if (letter.senderId && letter.senderId !== replierId) {
+    createNotification(
+      letter.senderId,
+      'relay_reply',
+      '接力回信更新 ✨',
+      `你的信《${letter.title}》收到了来自 ${reply.senderName} 的接力回信`,
+      id
+    );
+  }
+  if (parentReply.replierId && parentReply.replierId !== replierId) {
+    createNotification(
+      parentReply.replierId,
+      'relay_reply',
+      '你的回复被接力了 🌟',
+      `${reply.senderName} 回应了你的回复："${content.substring(0, 30)}..."`,
+      id
+    );
+  }
+
+  const replyTree = buildReplyTree(letter.replies);
+
+  res.json({
+    success: true,
+    message: '接力回信已送达，情绪继续传递 ✨',
+    data: {
+      reply,
+      replyTree,
+      emotionChain
+    }
+  });
+});
+
+router.post('/:letterId/replies/:replyId/like', (req, res) => {
+  const { letterId, replyId } = req.params;
+  const { userId } = req.body;
+
+  const letterData = readJSON('letters.json') || { letters: [] };
+  const letter = letterData.letters.find(l => l.id === letterId);
+
+  if (!letter) {
+    return res.status(404).json({ success: false, message: '信件不存在' });
+  }
+
+  letter.replies = letter.replies || [];
+  const reply = letter.replies.find(r => r.id === replyId);
+  if (!reply) {
+    return res.status(404).json({ success: false, message: '回复不存在' });
+  }
+
+  reply.likes = (reply.likes || 0) + 1;
+  writeJSON('letters.json', letterData);
+
+  if (reply.replierId && reply.replierId !== userId) {
+    createNotification(
+      reply.replierId,
+      'reply_like',
+      '你的回复被点赞了 💫',
+      `有人为你的回复送上了一颗小星星`,
+      letterId
+    );
+  }
+
+  res.json({
+    success: true,
+    likes: reply.likes,
+    message: '已送上一颗小星星 ✨'
+  });
+});
+
+router.post('/:letterId/replies/:replyId/feature', (req, res) => {
+  const { letterId, replyId } = req.params;
+  const { featured, userId } = req.body;
+
+  const letterData = readJSON('letters.json') || { letters: [] };
+  const letter = letterData.letters.find(l => l.id === letterId);
+
+  if (!letter) {
+    return res.status(404).json({ success: false, message: '信件不存在' });
+  }
+
+  letter.replies = letter.replies || [];
+  const reply = letter.replies.find(r => r.id === replyId);
+  if (!reply) {
+    return res.status(404).json({ success: false, message: '回复不存在' });
+  }
+
+  reply.isFeatured = featured !== false;
+  reply.featuredAt = reply.isFeatured ? new Date().toISOString() : null;
+  reply.featuredBy = userId || null;
+  writeJSON('letters.json', letterData);
+
+  if (reply.isFeatured && reply.replierId && reply.replierId !== userId) {
+    createNotification(
+      reply.replierId,
+      'reply_featured',
+      '你的回复被选为精选 🏆',
+      `你的回复在《${letter.title}》中被选为精选回复！`,
+      letterId
+    );
+  }
+
+  res.json({
+    success: true,
+    message: reply.isFeatured ? '已标记为精选回复' : '已取消精选标记',
+    data: reply
+  });
+});
+
+router.get('/:id/collaboration', (req, res) => {
+  const { id } = req.params;
+  const letterData = readJSON('letters.json') || { letters: [] };
+  const letter = letterData.letters.find(l => l.id === id);
+
+  if (!letter) {
+    return res.status(404).json({ success: false, message: '信件不存在' });
+  }
+
+  const replies = letter.replies || [];
+  const replyTree = buildReplyTree(replies);
+
+  const emotionDistribution = {};
+  const uniqueSenders = new Set();
+  let totalRelayReplies = 0;
+
+  replies.forEach(r => {
+    if (r.parentReplyId) totalRelayReplies++;
+    uniqueSenders.add(r.senderName);
+    if (r.emotion) {
+      emotionDistribution[r.emotion] = (emotionDistribution[r.emotion] || 0) + 1;
+    }
+  });
+
+  const rootReplies = replies.filter(r => !r.parentReplyId);
+  const emotionChains = rootReplies.map(root => {
+    const chain = getEmotionChainForReply(root.id, replies);
+    const chainEmotions = chain.map(c => c.emotion);
+    const emotionCount = {};
+    chainEmotions.forEach(e => { emotionCount[e] = (emotionCount[e] || 0) + 1; });
+    let dominantEmotion = chainEmotions[0] || '温暖';
+    let maxCount = 0;
+    Object.entries(emotionCount).forEach(([e, c]) => {
+      if (c > maxCount) { maxCount = c; dominantEmotion = e; }
+    });
+    return {
+      chainId: 'chain_' + root.id,
+      letterId: id,
+      rootReplyId: root.id,
+      emotions: chain,
+      dominantEmotion,
+      totalLength: chain.length
+    };
+  });
+
+  const longestChain = emotionChains.reduce((max, c) => Math.max(max, c.totalLength), 0);
+
+  const featuredReplies = replies
+    .filter(r => r.isFeatured)
+    .sort((a, b) => new Date(b.featuredAt || b.createdAt) - new Date(a.featuredAt || a.createdAt));
+
+  res.json({
+    success: true,
+    data: {
+      replyTree,
+      stats: {
+        totalReplies: replies.length,
+        totalRelayReplies,
+        featuredReplies: featuredReplies.length,
+        uniqueParticipants: uniqueSenders.size,
+        longestEmotionChain: longestChain,
+        emotionDistribution
+      },
+      emotionChains,
+      featuredReplies
+    }
+  });
+});
+
+router.get('/:id/replies/tree', (req, res) => {
+  const { id } = req.params;
+  const letterData = readJSON('letters.json') || { letters: [] };
+  const letter = letterData.letters.find(l => l.id === id);
+
+  if (!letter) {
+    return res.status(404).json({ success: false, message: '信件不存在' });
+  }
+
+  const replyTree = buildReplyTree(letter.replies || []);
+  res.json({ success: true, data: replyTree });
+});
+
 module.exports = router;

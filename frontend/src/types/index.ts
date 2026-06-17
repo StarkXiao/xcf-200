@@ -17,6 +17,15 @@ export interface Reply {
   content: string;
   emotion: string;
   createdAt: string;
+  parentReplyId?: string | null;
+  replierId?: string | null;
+  likes?: number;
+  isFeatured?: boolean;
+  featuredAt?: string | null;
+  featuredBy?: string | null;
+  chainOrder?: number;
+  emotionChain?: string[];
+  subReplies?: Reply[];
 }
 
 export interface Letter {
@@ -1201,4 +1210,44 @@ export interface DraftStats {
   wordTotal: number;
   versionsTotal: number;
   lastDraftAt: string | null;
+}
+
+export interface EmotionChainItem {
+  replyId: string;
+  senderName: string;
+  emotion: string;
+  createdAt: string;
+  order: number;
+}
+
+export interface EmotionChainData {
+  chainId: string;
+  letterId: string;
+  rootReplyId: string;
+  emotions: EmotionChainItem[];
+  dominantEmotion: string;
+  totalLength: number;
+}
+
+export interface SubmitRelayReplyData {
+  parentReplyId: string;
+  senderName?: string;
+  content: string;
+  emotion: string;
+  replierId?: string;
+}
+
+export interface CollaborationStats {
+  totalReplies: number;
+  totalRelayReplies: number;
+  featuredReplies: number;
+  uniqueParticipants: number;
+  longestEmotionChain: number;
+  emotionDistribution: Record<string, number>;
+}
+
+export interface LetterCollaborationData {
+  stats: CollaborationStats;
+  emotionChains: EmotionChainData[];
+  featuredReplies: Reply[];
 }
