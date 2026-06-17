@@ -6,8 +6,10 @@ import {
   AlertTriangle,
   Filter,
   RefreshCw,
+  Flag,
 } from 'lucide-react';
 import { guardianStationApi } from '@/api/guardianStation';
+import { reportsApi } from '@/api/reports';
 import {
   StatsOverview,
   ReviewTaskCard,
@@ -17,6 +19,7 @@ import {
   GuardianRanking,
   RiskLevelBadge,
 } from '@/components/GuardianStation';
+import { ReportCard, ReportHandleModal } from '@/components/Report';
 import type {
   GuardianStationStats,
   ReplyReviewTask,
@@ -25,11 +28,14 @@ import type {
   GuardianRankingItem,
   GuardianSubmitReviewData,
   AddInterventionRecordData,
+  Report,
+  ReportStats,
+  HandleReportData,
 } from '@/types';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
 
-type TabType = 'overview' | 'review' | 'intervention' | 'ranking';
+type TabType = 'overview' | 'review' | 'reports' | 'intervention' | 'ranking';
 
 export default function GuardianStation() {
   const { user, isAuthenticated } = useAuthStore();
@@ -61,9 +67,22 @@ export default function GuardianStation() {
   const [ranking, setRanking] = useState<GuardianRankingItem[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
 
+  const [reports, setReports] = useState<Report[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportStatusFilter, setReportStatusFilter] = useState<string>('pending');
+  const [reportTypeFilter, setReportTypeFilter] = useState<string>('');
+  const [reportTargetFilter, setReportTargetFilter] = useState<string>('');
+  const [reportTotal, setReportTotal] = useState(0);
+  const [reportStats, setReportStats] = useState<ReportStats | null>(null);
+
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [defaultReportAction, setDefaultReportAction] = useState<'warning' | 'hide' | 'remove' | 'reject' | null>(null);
+
   const tabs = [
     { key: 'overview' as TabType, label: '总览', icon: <Shield className="w-4 h-4" /> },
     { key: 'review' as TabType, label: '内容审核', icon: <Eye className="w-4 h-4" /> },
+    { key: 'reports' as TabType, label: '举报管理', icon: <Flag className="w-4 h-4" /> },
     { key: 'intervention' as TabType, label: '干预记录', icon: <Heart className="w-4 h-4" /> },
     { key: 'ranking' as TabType, label: '守护排行', icon: <AlertTriangle className="w-4 h-4" /> },
   ];
@@ -153,19 +172,53 @@ export default function GuardianStation() {
     }
   };
 
+  const fetchReports = async () => {
+    try {
+      setReportsLoading(true);
+      const res = await reportsApi.getReports({
+        status: reportStatusFilter || undefined,
+        reportType: reportTypeFilter || undefined,
+        targetType: reportTargetFilter || undefined,
+        limit: 20,
+      });
+      if (res.success) {
+        setReports(res.data);
+        setReportTotal(res.total);
+      }
+    } catch (err) {
+      showToast({ type: 'error', message: '加载举报列表失败' });
+    } finally {
+      setReportsLoading(false);
+    }
+  };
+
+  const fetchReportStats = async () => {
+    try {
+      const res = await reportsApi.getReportStats();
+      if (res.success) {
+        setReportStats(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch report stats', err);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
     fetchGuardianProfile();
     fetchRanking();
+    fetchReportStats();
   }, [user]);
 
   useEffect(() => {
     if (activeTab === 'review') {
       fetchReviewTasks();
+    } else if (activeTab === 'reports') {
+      fetchReports();
     } else if (activeTab === 'intervention') {
       fetchInterventions();
     }
-  }, [activeTab, reviewStatusFilter, reviewRiskFilter, interventionStatusFilter, interventionPriorityFilter]);
+  }, [activeTab, reviewStatusFilter, reviewRiskFilter, reportStatusFilter, reportTypeFilter, reportTargetFilter, interventionStatusFilter, interventionPriorityFilter]);
 
   const handleApplyGuardian = async () => {
     if (!user) {
@@ -214,6 +267,43 @@ export default function GuardianStation() {
       }
     } catch (err: any) {
       showToast({ type: 'error', message: err.response?.data?.message || '审核失败' });
+    }
+  };
+
+  const handleReport = (report: Report, action: 'warning' | 'hide' | 'remove' | 'reject') => {
+    if (!user) return;
+    setSelectedReport(report);
+    setDefaultReportAction(action);
+    setShowReportModal(true);
+  };
+
+  const handleReportView = (report: Report) => {
+    if (!user) return;
+    setSelectedReport(report);
+    setDefaultReportAction(null);
+    setShowReportModal(true);
+  };
+
+  const handleReportSubmit = async (action: 'warning' | 'hide' | 'remove' | 'reject', reason: string) => {
+    if (!user || !selectedReport) return;
+    try {
+      const res = await reportsApi.handleReport(selectedReport.id, {
+        action,
+        result: reason,
+        handlerId: user.id,
+        handlerName: user.username,
+      });
+      if (res.success) {
+        showToast({ type: 'success', message: '处理完成' });
+        fetchReports();
+        fetchReportStats();
+        fetchStats();
+        fetchGuardianProfile();
+        setShowReportModal(false);
+        setSelectedReport(null);
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.message || '处理失败' });
     }
   };
 
@@ -528,6 +618,173 @@ export default function GuardianStation() {
           </div>
         )}
 
+        {activeTab === 'reports' && (
+          <div>
+            <div className="glass-card p-5 sm:p-6 rounded-2xl mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Filter className="w-4 h-4 text-white/60" />
+                <span className="text-sm font-medium text-white/80">筛选条件</span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <p className="text-xs text-white/50 mb-2">处理状态</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: '', label: '全部' },
+                      { key: 'pending', label: '待处理' },
+                      { key: 'processing', label: '处理中' },
+                      { key: 'resolved', label: '已处理' },
+                      { key: 'rejected', label: '已驳回' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.key}
+                        onClick={() => setReportStatusFilter(opt.key)}
+                        className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                          reportStatusFilter === opt.key
+                            ? 'bg-aurora/20 text-aurora border border-aurora/30'
+                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sm:w-auto">
+                  <p className="text-xs text-white/50 mb-2">举报类型</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: '', label: '全部' },
+                      { key: 'spam', label: '垃圾广告' },
+                      { key: 'harassment', label: '骚扰辱骂' },
+                      { key: 'inappropriate', label: '不当内容' },
+                      { key: 'violence', label: '暴力血腥' },
+                      { key: 'self_harm', label: '自伤倾向' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.key}
+                        onClick={() => setReportTypeFilter(opt.key)}
+                        className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                          reportTypeFilter === opt.key
+                            ? 'bg-nebula-pink/20 text-nebula-pink border border-nebula-pink/30'
+                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sm:w-auto">
+                  <p className="text-xs text-white/50 mb-2">目标类型</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: '', label: '全部' },
+                      { key: 'letter', label: '信件' },
+                      { key: 'reply', label: '回复' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.key}
+                        onClick={() => setReportTargetFilter(opt.key)}
+                        className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                          reportTargetFilter === opt.key
+                            ? 'bg-nebula-purple/20 text-nebula-purple border border-nebula-purple/30'
+                            : 'bg-white/5 text-white/60 border border-white/10 hover:bg-white/10'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {reportStats && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="glass-card rounded-2xl p-4">
+                  <p className="text-sm text-white/60 mb-1">总举报数</p>
+                  <p className="text-2xl font-bold text-white">{reportStats.total}</p>
+                </div>
+                <div className="glass-card rounded-2xl p-4">
+                  <p className="text-sm text-white/60 mb-1">待处理</p>
+                  <p className="text-2xl font-bold text-nebula-orange">{reportStats.pending}</p>
+                </div>
+                <div className="glass-card rounded-2xl p-4">
+                  <p className="text-sm text-white/60 mb-1">已处理</p>
+                  <p className="text-2xl font-bold text-nebula-mint">{reportStats.resolved}</p>
+                </div>
+                <div className="glass-card rounded-2xl p-4">
+                  <p className="text-sm text-white/60 mb-1">今日新增</p>
+                  <p className="text-2xl font-bold text-aurora">{reportStats.todayCount}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-6 rounded-full bg-gradient-to-b from-nebula-pink to-nebula-orange" />
+                <h2 className="font-serif-sc text-xl sm:text-2xl font-semibold text-white">
+                  举报管理
+                </h2>
+                <span className="text-sm text-white/50">共 {reportTotal} 条</span>
+              </div>
+            </div>
+
+            {!isGuardian ? (
+              <div className="text-center py-20 glass-card rounded-2xl">
+                <Flag className="w-16 h-16 text-white/20 mx-auto mb-4" />
+                <p className="text-lg text-white/70 font-serif-sc mb-2">
+                  仅守护员可管理举报
+                </p>
+                <p className="text-sm text-white/50 mb-6">
+                  申请成为守护员，共同维护社区环境
+                </p>
+                <button
+                  onClick={handleApplyGuardian}
+                  disabled={applying}
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-aurora to-nebula-pink text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {applying ? '申请中...' : '立即加入 ✨'}
+                </button>
+              </div>
+            ) : reportsLoading && reports.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-48 rounded-2xl bg-white/5 animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : reports.length === 0 ? (
+              <div className="text-center py-20 glass-card rounded-2xl">
+                <div className="text-6xl mb-4">🚀</div>
+                <p className="text-lg text-white/70 font-serif-sc mb-2">
+                  暂无符合条件的举报
+                </p>
+                <p className="text-sm text-white/50 mb-6">
+                  试试调整筛选条件
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
+                {reports.map((report) => (
+                  <ReportCard
+                    key={report.id}
+                    report={report}
+                    onHandle={handleReport}
+                    onView={handleReportView}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'intervention' && (
           <div>
             <div className="glass-card p-5 sm:p-6 rounded-2xl mb-6">
@@ -691,6 +948,20 @@ export default function GuardianStation() {
           intervention={selectedIntervention}
           onAddRecord={handleAddInterventionRecord}
           operatorId={user?.id || ''}
+        />
+      )}
+
+      {selectedReport && (
+        <ReportHandleModal
+          open={showReportModal}
+          onClose={() => {
+            setShowReportModal(false);
+            setSelectedReport(null);
+            setDefaultReportAction(null);
+          }}
+          report={selectedReport}
+          defaultAction={defaultReportAction}
+          onHandle={handleReportSubmit}
         />
       )}
     </div>

@@ -3,6 +3,8 @@ import type { Reply, ReplyQualityFeedback } from '@/types';
 import EmotionTag from '@/components/Emotion/EmotionTag';
 import RelayReplyForm from './RelayReplyForm';
 import ReplyFeedback from './ReplyFeedback';
+import ReportModal from '@/components/Report/ReportModal';
+import ContentStatusBadge from '@/components/Report/ContentStatusBadge';
 import { formatDate } from '@/utils/helpers';
 import {
   Globe2,
@@ -17,8 +19,10 @@ import {
   MessageSquare,
   Star,
   ThumbsUp,
+  Flag,
 } from 'lucide-react';
 import { lettersApi } from '@/api/letters';
+import { reportsApi } from '@/api/reports';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
 
@@ -90,6 +94,8 @@ export default function ReplyCard({
   const [featureLoading, setFeatureLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState<ReplyQualityFeedback | null>(reply.feedback || null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [hasReported, setHasReported] = useState(false);
 
   const handleLike = async () => {
     if (likeLoading) return;
@@ -327,8 +333,26 @@ export default function ReplyCard({
                     <span>{isFeatured ? '精选' : '加精'}</span>
                   </button>
                 )}
+
+                <button
+                  onClick={() => setShowReportModal(true)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all ${
+                    hasReported
+                      ? 'text-nebula-pink'
+                      : 'text-white/40 hover:text-nebula-pink hover:bg-nebula-pink/10'
+                  }`}
+                  title="举报"
+                >
+                  <Flag className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
+
+            {reply.reviewStatus && reply.reviewStatus !== 'normal' && (
+              <div className="mt-3">
+                <ContentStatusBadge status={reply.reviewStatus} size="sm" />
+              </div>
+            )}
 
             {showFeedback && !feedback && (
               <ReplyFeedback
@@ -363,6 +387,17 @@ export default function ReplyCard({
                 ))}
               </div>
             )}
+
+            <ReportModal
+              open={showReportModal}
+              onClose={() => setShowReportModal(false)}
+              targetId={reply.id}
+              targetType="reply"
+              targetTitle={reply.content.substring(0, 30) + (reply.content.length > 30 ? '...' : '')}
+              onSuccess={() => {
+                setHasReported(true);
+              }}
+            />
           </div>
         </div>
       </div>

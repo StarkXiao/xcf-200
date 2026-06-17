@@ -44,6 +44,17 @@ export interface Reply {
   isStrangerReply?: boolean;
   anonymousId?: string;
   review?: ReplyReview | null;
+  reportCount?: number;
+  reviewStatus?: 'normal' | 'pending_review' | 'warned' | 'hidden' | 'removed';
+  isHidden?: boolean;
+  hiddenReason?: string;
+  hiddenAt?: string;
+  hiddenBy?: string;
+  isRemoved?: boolean;
+  removedReason?: string;
+  removedAt?: string;
+  removedBy?: string;
+  warnings?: ReportWarning[];
 }
 
 export interface Letter {
@@ -62,6 +73,18 @@ export interface Letter {
   createdAt: string;
   deliverAt: string;
   replies: Reply[];
+  reportCount?: number;
+  reviewStatus?: 'normal' | 'pending_review' | 'warned' | 'hidden' | 'removed';
+  isHidden?: boolean;
+  hiddenReason?: string;
+  hiddenAt?: string;
+  hiddenBy?: string;
+  isRemoved?: boolean;
+  removedReason?: string;
+  removedAt?: string;
+  removedBy?: string;
+  warnings?: ReportWarning[];
+  updatedAt?: string;
 }
 
 export interface LetterListItem {
@@ -76,6 +99,10 @@ export interface LetterListItem {
   views?: number;
   repliesCount: number;
   createdAt: string;
+  reportCount?: number;
+  reviewStatus?: 'normal' | 'pending_review' | 'warned' | 'hidden' | 'removed';
+  isHidden?: boolean;
+  isRemoved?: boolean;
 }
 
 export interface Emotion {
@@ -1647,4 +1674,105 @@ export interface PlazaOverviewData {
     activeActivities: number;
     featuredCount: number;
   };
+}
+
+export type ReportType =
+  | 'spam'
+  | 'harassment'
+  | 'inappropriate'
+  | 'violence'
+  | 'self_harm'
+  | 'privacy'
+  | 'plagiarism'
+  | 'other';
+
+export type ReportTargetType = 'letter' | 'reply';
+
+export type ReportStatus = 'pending' | 'processing' | 'resolved' | 'rejected';
+
+export type ReportResultType =
+  | 'content_removed'
+  | 'content_hidden'
+  | 'user_warned'
+  | 'user_banned'
+  | 'no_violation'
+  | 'other';
+
+export interface ReportTypeInfo {
+  key: ReportType;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+export interface Report {
+  id: string;
+  targetId: string;
+  targetType: ReportTargetType;
+  reportType: ReportType;
+  reportTypeLabel: string;
+  reason: string;
+  reporterId: string | null;
+  reporterName: string;
+  status: ReportStatus;
+  statusLabel?: string;
+  handlerId: string | null;
+  handlerName: string | null;
+  result: string | null;
+  resultType: ReportResultType | null;
+  resultLabel?: string | null;
+  handledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  targetTitle?: string;
+  targetContent?: string;
+  targetUserId?: string | null;
+  targetUserName?: string;
+  letterId?: string | null;
+}
+
+export interface SubmitReportData {
+  targetId: string;
+  targetType: ReportTargetType;
+  reportType: ReportType;
+  reason?: string;
+  reporterId?: string;
+  reporterName?: string;
+}
+
+export interface HandleReportData {
+  resultType?: ReportResultType;
+  result?: string;
+  handlerId: string;
+  handlerName?: string;
+  action: 'warning' | 'hide' | 'remove' | 'reject';
+}
+
+export interface ReportCheckResult {
+  hasReported: boolean;
+  reportCount: number;
+  reviewStatus: 'normal' | 'pending_review' | 'resolved' | 'rejected';
+  targetId: string;
+  targetType: ReportTargetType;
+}
+
+export interface ReportStats {
+  total: number;
+  pending: number;
+  processing: number;
+  resolved: number;
+  rejected: number;
+  byType: Record<ReportType, number>;
+  byTargetType: {
+    letter: number;
+    reply: number;
+  };
+  todayCount: number;
+}
+
+export interface ReportWarning {
+  id: string;
+  reason: string;
+  warnedBy: string;
+  warnedAt: string;
 }

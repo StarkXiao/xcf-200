@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Heart, BookmarkPlus, Bookmark, ArrowLeft, Send, MessageSquare, Sparkles, Share2, Bell, FolderOpen, Users } from 'lucide-react';
+import { Heart, BookmarkPlus, Bookmark, ArrowLeft, Send, MessageSquare, Sparkles, Share2, Bell, FolderOpen, Users, Flag, AlertTriangle } from 'lucide-react';
 import LetterPaper from '@/components/Letter/LetterPaper';
 import ReplyCard from '@/components/Letter/ReplyCard';
 import ReplyCandidatePool from '@/components/Letter/ReplyCandidatePool';
@@ -11,12 +11,15 @@ import GroupModal from '@/components/Favorites/GroupModal';
 import CollaborationStatsPanel from '@/components/Letter/CollaborationStats';
 import EmotionChainDisplay from '@/components/Letter/EmotionChainDisplay';
 import FeaturedReplies from '@/components/Letter/FeaturedReplies';
+import ReportModal from '@/components/Report/ReportModal';
+import ContentStatusBadge from '@/components/Report/ContentStatusBadge';
 import { lettersApi } from '@/api/letters';
+import { reportsApi } from '@/api/reports';
 import { favoritesApi, type GroupWithCount } from '@/api/favorites';
 import useAuthStore from '@/store/useAuthStore';
 import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
-import type { Letter, Reply, LetterCollaborationData } from '@/types';
+import type { Letter, Reply, LetterCollaborationData, ReportCheckResult } from '@/types';
 
 type ActiveTab = 'all' | 'featured' | 'chains';
 
@@ -43,6 +46,8 @@ export default function LetterDetail() {
 
   const [collaboration, setCollaboration] = useState<(LetterCollaborationData & { replyTree: Reply[] }) | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>('all');
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportCheck, setReportCheck] = useState<ReportCheckResult | null>(null);
 
   const isFavorited = id ? favStore.isFavorited(id) : false;
 
@@ -94,9 +99,22 @@ export default function LetterDetail() {
     }
   };
 
+  const checkReportStatus = async () => {
+    if (!id) return;
+    try {
+      const res = await reportsApi.checkReported(id, 'letter', user?.id);
+      if (res.success && res.data) {
+        setReportCheck(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to check report status', err);
+    }
+  };
+
   useEffect(() => {
     fetchLetter();
     fetchCollaboration();
+    checkReportStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -364,7 +382,27 @@ export default function LetterDetail() {
                   <Share2 className="w-5 h-5" />
                   <span className="text-sm font-medium">分享</span>
                 </button>
+
+                <button
+                  onClick={() => setShowReportModal(true)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
+                    reportCheck?.hasReported
+                      ? 'bg-nebula-pink/10 border-nebula-pink/30 text-nebula-pink'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10 text-white/70'
+                  }`}
+                >
+                  <Flag className="w-5 h-5" />
+                  <span className="text-sm font-medium">
+                    {reportCheck?.hasReported ? '已举报' : '举报'}
+                  </span>
+                </button>
               </div>
+
+              {letter.reviewStatus && letter.reviewStatus !== 'normal' && (
+                <div className="mt-4">
+                  <ContentStatusBadge status={letter.reviewStatus} />
+                </div>
+              )}
             </div>
 
             {id && (
@@ -608,6 +646,18 @@ export default function LetterDetail() {
           onClose={() => setShowReminderModal(false)}
           onSubmit={handleSetReminder}
           letterTitle={letter?.title}
+        />
+
+        <ReportModal
+          open={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          targetId={id || ''}
+          targetType="letter"
+          targetTitle={letter?.title}
+          onSuccess={() => {
+            checkReportStatus();
+            fetchLetter();
+          }}
         />
       </div>
     </div>
