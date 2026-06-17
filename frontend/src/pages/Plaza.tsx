@@ -12,6 +12,7 @@ import useAuthStore from '@/store/useAuthStore';
 import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
 import type { LetterListItem } from '@/types';
+import CombatSkillBar from '@/components/Skill/CombatSkillBar';
 
 type SortType = 'latest' | 'popular' | 'most_replied';
 type TimeRangeType = 'today' | 'week' | 'month' | 'year' | null;

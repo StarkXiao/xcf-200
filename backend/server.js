@@ -18,6 +18,7 @@ const guardianStationRoutes = require('./routes/guardianStation');
 const parallelMatchRoutes = require('./routes/parallelMatch');
 const favoritesRoutes = require('./routes/favorites');
 const draftRoutes = require('./routes/drafts');
+const skillRoutes = require('./routes/skills');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -41,6 +42,7 @@ app.use('/api/guardian-station', guardianStationRoutes);
 app.use('/api/parallel-match', parallelMatchRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/drafts', draftRoutes);
+app.use('/api/skills', skillRoutes);
 
 app.get('/api', (req, res) => {
   res.json({ 

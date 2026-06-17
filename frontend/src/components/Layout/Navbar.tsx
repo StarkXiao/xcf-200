@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Home, Tag, User, PenLine, LogOut, Menu, X, Sparkles, Archive, MessageSquareHeart, HeartPulse, Globe, Mailbox, Orbit, Trophy, Shield, Atom, FileText } from 'lucide-react';
+import { Mail, Home, Tag, User, PenLine, LogOut, Menu, X, Sparkles, Archive, MessageSquareHeart, HeartPulse, Globe, Mailbox, Orbit, Trophy, Shield, Atom, FileText, Wand2 } from 'lucide-react';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
 import { cn } from '@/utils/helpers';
@@ -16,6 +16,7 @@ const navItems = [
   { path: '/parallel-match', label: '平行匹配', icon: Atom },
   { path: '/guardian-station', label: '匿名守护站', icon: Shield },
   { path: '/achievements', label: '成就中心', icon: Trophy },
+  { path: '/skill-tree', label: '星辰功法', icon: Wand2 },
   { path: '/healing', label: '情绪疗愈室', icon: HeartPulse },
   { path: '/emotions', label: '情绪星河', icon: Tag },
   { path: '/archive', label: '星愿档案馆', icon: Archive },

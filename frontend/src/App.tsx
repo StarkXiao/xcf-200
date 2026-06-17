@@ -24,6 +24,7 @@ import RelationNetwork from '@/pages/RelationNetwork';
 import AchievementCenter from '@/pages/AchievementCenter';
 import ParallelMatch from '@/pages/ParallelMatch';
 import Drafts from '@/pages/Drafts';
+import SkillTree from '@/pages/SkillTree';
 import NotFound from '@/pages/NotFound';
 
 function ScrollToTop() {

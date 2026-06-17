@@ -1366,3 +1366,163 @@ export interface SubmitFeedbackData {
   comment?: string;
   userId?: string;
 }
+
+export type SkillCategory = 'scribing' | 'resonance' | 'chronos' | 'warden';
+export type SkillBranch = null | 'path_a' | 'path_b';
+export type SkillRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export type SkillEffectType = 'buff' | 'debuff' | 'utility' | 'heal' | 'damage';
+export type CombatTrigger = 'write_letter' | 'reply' | 'favorite' | 'browse';
+
+export interface SkillEffect {
+  type: SkillEffectType;
+  target: string;
+  value: number;
+  scalePerLevel: number;
+  description: string;
+}
+
+export interface SkillBranchOption {
+  id: SkillBranch;
+  name: string;
+  description: string;
+  icon: string;
+  effectModifier: Partial<SkillEffect>;
+  auraCostModifier?: number;
+  cooldownModifier?: number;
+}
+
+export interface Skill {
+  id: string;
+  name: string;
+  category: SkillCategory;
+  description: string;
+  icon: string;
+  color: string;
+  rarity: SkillRarity;
+  maxLevel: number;
+  baseAuraCost: number;
+  baseCooldown: number;
+  unlockLevel: number;
+  prerequisites: string[];
+  effects: SkillEffect[];
+  branches?: SkillBranchOption[];
+  branchUnlockLevel?: number;
+  combatTrigger: CombatTrigger[];
+  categoryLabel: string;
+}
+
+export interface UserSkillProgress {
+  skillId: string;
+  level: number;
+  selectedBranch: SkillBranch;
+  unlockedAt: string;
+  upgradedAt: string;
+  totalUsed: number;
+}
+
+export interface UserAuraState {
+  current: number;
+  max: number;
+  regenRate: number;
+  lastRegenAt: string;
+}
+
+export interface CooldownState {
+  skillId: string;
+  endsAt: string;
+  remaining: number;
+}
+
+export interface SkillCategoryInfo {
+  key: SkillCategory;
+  name: string;
+  icon: string;
+  color: string;
+  description: string;
+}
+
+export interface SkillNode {
+  skill: Skill;
+  progress: UserSkillProgress | null;
+  isUnlocked: boolean;
+  canUpgrade: boolean;
+  upgradeCost: number;
+  branchOptions?: SkillBranchOption[];
+  hasSelectedBranch: boolean;
+}
+
+export interface SkillTreeData {
+  categories: SkillCategoryInfo[];
+  skills: Skill[];
+  userProgress: UserSkillProgress[];
+  aura: UserAuraState;
+  userLevel: number;
+  totalSkillPoints: number;
+  availableSkillPoints: number;
+  usedSkillPoints: number;
+  starProgress: {
+    current: number;
+    next: number;
+  };
+}
+
+export interface CombatButtonData {
+  skillId: string;
+  skillName: string;
+  icon: string;
+  color: string;
+  auraCost: number;
+  effectiveAuraCost: number;
+  cooldown: number;
+  effectiveCooldown: number;
+  level: number;
+  selectedBranch: SkillBranch;
+  isOnCooldown: boolean;
+  cooldownRemaining: number;
+  hasEnoughAura: boolean;
+  effects: SkillEffect[];
+  trigger: CombatTrigger;
+  description: string;
+}
+
+export interface SkillUpgradeRequest {
+  skillId: string;
+  userId: string;
+}
+
+export interface SkillBranchSelectRequest {
+  skillId: string;
+  userId: string;
+  branch: SkillBranch;
+}
+
+export interface SkillUseRequest {
+  skillId: string;
+  trigger: CombatTrigger;
+  targetId?: string;
+}
+
+export interface SkillUseResult {
+  success: boolean;
+  skillId: string;
+  effects: SkillEffect[];
+  auraSpent: number;
+  auraRemaining: number;
+  auraMax: number;
+  cooldownEndsAt: string;
+  message: string;
+}
+
+export interface UserSkillOverview {
+  userId: string;
+  aura: UserAuraState;
+  totalUnlocked: number;
+  totalMaxLeveled: number;
+  activeBranches: number;
+  skillPointProgress: {
+    current: number;
+    next: number;
+    points: number;
+  };
+  categoryBreakdown: Record<SkillCategory, { unlocked: number; total: number; totalLevels: number }>;
+}

@@ -1,0 +1,556 @@
+{
+  "categories": [
+    {
+      "key": "scribing",
+      "name": "誊星术",
+      "icon": "✒️",
+      "color": "#ffd166",
+      "description": "掌控笔墨之力，提升写信效率与品质"
+    },
+    {
+      "key": "resonance",
+      "name": "共鸣术",
+      "icon": "💫",
+      "color": "#f72585",
+      "description": "心灵共振之法，强化情感连接与互动效果"
+    },
+    {
+      "key": "chronos",
+      "name": "时序术",
+      "icon": "⏳",
+      "color": "#4cc9f0",
+      "description": "操纵时间流逝，加速信件投递与冷却恢复"
+    },
+    {
+      "key": "warden",
+      "name": "守护术",
+      "icon": "🛡️",
+      "color": "#06d6a0",
+      "description": "星界守护之力，增强灵气与防御属性"
+    }
+  ],
+  "skills": [
+    {
+      "id": "scribing_1",
+      "name": "疾笔",
+      "category": "scribing",
+      "categoryLabel": "誊星术",
+      "description": "心念一动，笔下生风。加速信件撰写，提升写信获得的灵气。",
+      "icon": "🖋️",
+      "color": "#ffd166",
+      "rarity": "common",
+      "maxLevel": 10,
+      "baseAuraCost": 10,
+      "baseCooldown": 30,
+      "unlockLevel": 1,
+      "prerequisites": [],
+      "effects": [
+        {
+          "type": "buff",
+          "target": "aura_gain",
+          "value": 5,
+          "scalePerLevel": 2,
+          "description": "每次写信额外获得灵气"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "墨涌",
+          "description": "墨泉涌现，灵气收益再提升",
+          "icon": "🌊",
+          "effectModifier": { "value": 3, "scalePerLevel": 1 },
+          "auraCostModifier": 2
+        },
+        {
+          "id": "path_b",
+          "name": "灵省",
+          "description": "以意御笔，减少技能灵气消耗",
+          "icon": "🌸",
+          "effectModifier": {},
+          "auraCostModifier": -5
+        }
+      ],
+      "branchUnlockLevel": 3,
+      "combatTrigger": ["write_letter"]
+    },
+    {
+      "id": "scribing_2",
+      "name": "点睛",
+      "category": "scribing",
+      "categoryLabel": "誊星术",
+      "description": "画龙点睛之笔，让信件内容更富感染力。",
+      "icon": "✨",
+      "color": "#ffd166",
+      "rarity": "rare",
+      "maxLevel": 8,
+      "baseAuraCost": 25,
+      "baseCooldown": 60,
+      "unlockLevel": 2,
+      "prerequisites": ["scribing_1"],
+      "effects": [
+        {
+          "type": "buff",
+          "target": "letter_quality",
+          "value": 10,
+          "scalePerLevel": 5,
+          "description": "提升信件品质与获得的点赞数"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "共鸣笔",
+          "description": "笔端蕴含共鸣之力，提升回复率",
+          "icon": "🎵",
+          "effectModifier": { "value": 5 }
+        },
+        {
+          "id": "path_b",
+          "name": "流光字",
+          "description": "字字如星辰闪耀，提升收藏率",
+          "icon": "⭐",
+          "effectModifier": { "value": 5 }
+        }
+      ],
+      "branchUnlockLevel": 4,
+      "combatTrigger": ["write_letter"]
+    },
+    {
+      "id": "scribing_3",
+      "name": "千言",
+      "category": "scribing",
+      "categoryLabel": "誊星术",
+      "description": "千言万语，一挥而就。大幅提升写信获得的反馈。",
+      "icon": "📜",
+      "color": "#ff7b00",
+      "rarity": "epic",
+      "maxLevel": 5,
+      "baseAuraCost": 60,
+      "baseCooldown": 180,
+      "unlockLevel": 5,
+      "prerequisites": ["scribing_2"],
+      "effects": [
+        {
+          "type": "buff",
+          "target": "letter_multiplier",
+          "value": 1.5,
+          "scalePerLevel": 0.2,
+          "description": "信件效果倍率提升"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "万卷",
+          "description": "读书破万卷，效果倍率再度提升",
+          "icon": "📚",
+          "effectModifier": { "value": 0.3 }
+        },
+        {
+          "id": "path_b",
+          "name": "神行",
+          "description": "瞬息千里，大幅减少冷却",
+          "icon": "⚡",
+          "effectModifier": {},
+          "cooldownModifier": -60
+        }
+      ],
+      "branchUnlockLevel": 2,
+      "combatTrigger": ["write_letter"]
+    },
+    {
+      "id": "resonance_1",
+      "name": "心语",
+      "category": "resonance",
+      "categoryLabel": "共鸣术",
+      "description": "心灵之声，直抵人心。回复他人信件时获得额外共鸣。",
+      "icon": "💬",
+      "color": "#f72585",
+      "rarity": "common",
+      "maxLevel": 10,
+      "baseAuraCost": 12,
+      "baseCooldown": 25,
+      "unlockLevel": 1,
+      "prerequisites": [],
+      "effects": [
+        {
+          "type": "buff",
+          "target": "reply_impact",
+          "value": 8,
+          "scalePerLevel": 3,
+          "description": "回复产生的影响力提升"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "深情",
+          "description": "一字一句皆含深情，回复效果增强",
+          "icon": "💕",
+          "effectModifier": { "value": 4 }
+        },
+        {
+          "id": "path_b",
+          "name": "润物",
+          "description": "润物无声，减少灵气消耗",
+          "icon": "🌧️",
+          "effectModifier": {},
+          "auraCostModifier": -4
+        }
+      ],
+      "branchUnlockLevel": 3,
+      "combatTrigger": ["reply"]
+    },
+    {
+      "id": "resonance_2",
+      "name": "共鸣",
+      "category": "resonance",
+      "categoryLabel": "共鸣术",
+      "description": "心心相印，同频共振。浏览信件时触发共鸣获得灵气。",
+      "icon": "💗",
+      "color": "#f72585",
+      "rarity": "rare",
+      "maxLevel": 8,
+      "baseAuraCost": 20,
+      "baseCooldown": 45,
+      "unlockLevel": 2,
+      "prerequisites": ["resonance_1"],
+      "effects": [
+        {
+          "type": "buff",
+          "target": "browse_aura",
+          "value": 3,
+          "scalePerLevel": 2,
+          "description": "浏览信件时被动获得灵气"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "交感",
+          "description": "深度交流，灵气获取加倍",
+          "icon": "🔗",
+          "effectModifier": { "value": 2, "scalePerLevel": 1 }
+        },
+        {
+          "id": "path_b",
+          "name": "静默",
+          "description": "静水流深，冷却缩减",
+          "icon": "🕊️",
+          "effectModifier": {},
+          "cooldownModifier": -15
+        }
+      ],
+      "branchUnlockLevel": 4,
+      "combatTrigger": ["browse"]
+    },
+    {
+      "id": "resonance_3",
+      "name": "藏心",
+      "category": "resonance",
+      "categoryLabel": "共鸣术",
+      "description": "珍藏于心，化为力量。收藏信件时触发强力增益。",
+      "icon": "💎",
+      "color": "#b5179e",
+      "rarity": "epic",
+      "maxLevel": 5,
+      "baseAuraCost": 40,
+      "baseCooldown": 120,
+      "unlockLevel": 4,
+      "prerequisites": ["resonance_2"],
+      "effects": [
+        {
+          "type": "heal",
+          "target": "aura_restore",
+          "value": 30,
+          "scalePerLevel": 10,
+          "description": "收藏时恢复大量灵气"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "蕴神",
+          "description": "收藏中蕴含神性，恢复更多灵气",
+          "icon": "🌟",
+          "effectModifier": { "value": 20 }
+        },
+        {
+          "id": "path_b",
+          "name": "永恒",
+          "description": "瞬间冷却，让珍藏连续触发",
+          "icon": "♾️",
+          "effectModifier": {},
+          "cooldownModifier": -40
+        }
+      ],
+      "branchUnlockLevel": 2,
+      "combatTrigger": ["favorite"]
+    },
+    {
+      "id": "chronos_1",
+      "name": "流光",
+      "category": "chronos",
+      "categoryLabel": "时序术",
+      "description": "时光如流，加速冷却。所有技能冷却时间减少。",
+      "icon": "⏱️",
+      "color": "#4cc9f0",
+      "rarity": "common",
+      "maxLevel": 10,
+      "baseAuraCost": 15,
+      "baseCooldown": 0,
+      "unlockLevel": 1,
+      "prerequisites": [],
+      "effects": [
+        {
+          "type": "utility",
+          "target": "cooldown_reduce",
+          "value": 3,
+          "scalePerLevel": 1,
+          "description": "被动减少技能冷却秒数"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "飞逝",
+          "description": "白驹过隙，冷却缩减加强",
+          "icon": "🚀",
+          "effectModifier": { "value": 2 }
+        },
+        {
+          "id": "path_b",
+          "name": "恒常",
+          "description": "永恒流转，减少被动灵气消耗",
+          "icon": "🔄",
+          "effectModifier": {},
+          "auraCostModifier": -5
+        }
+      ],
+      "branchUnlockLevel": 3,
+      "combatTrigger": ["write_letter", "reply", "favorite", "browse"]
+    },
+    {
+      "id": "chronos_2",
+      "name": "瞬时",
+      "category": "chronos",
+      "categoryLabel": "时序术",
+      "description": "一瞬千里。信件投递速度提升，更快收到回信。",
+      "icon": "💨",
+      "color": "#4cc9f0",
+      "rarity": "rare",
+      "maxLevel": 8,
+      "baseAuraCost": 30,
+      "baseCooldown": 90,
+      "unlockLevel": 3,
+      "prerequisites": ["chronos_1"],
+      "effects": [
+        {
+          "type": "buff",
+          "target": "delivery_speed",
+          "value": 15,
+          "scalePerLevel": 5,
+          "description": "信件投递速度提升百分比"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "瞬移",
+          "description": "空间跳跃，投递速度激增",
+          "icon": "🌀",
+          "effectModifier": { "value": 10 }
+        },
+        {
+          "id": "path_b",
+          "name": "预见",
+          "description": "预知未来，减少冷却时间",
+          "icon": "👁️",
+          "effectModifier": {},
+          "cooldownModifier": -30
+        }
+      ],
+      "branchUnlockLevel": 4,
+      "combatTrigger": ["write_letter"]
+    },
+    {
+      "id": "chronos_3",
+      "name": "回溯",
+      "category": "chronos",
+      "categoryLabel": "时序术",
+      "description": "时间之河逆流而上。释放后立即重置一个技能的冷却。",
+      "icon": "🔙",
+      "color": "#4361ee",
+      "rarity": "legendary",
+      "maxLevel": 3,
+      "baseAuraCost": 100,
+      "baseCooldown": 300,
+      "unlockLevel": 6,
+      "prerequisites": ["chronos_2"],
+      "effects": [
+        {
+          "type": "utility",
+          "target": "reset_cooldown",
+          "value": 1,
+          "scalePerLevel": 1,
+          "description": "可重置的技能数量"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "轮回",
+          "description": "轮回无尽，可额外重置一个技能",
+          "icon": "♻️",
+          "effectModifier": { "value": 1 }
+        },
+        {
+          "id": "path_b",
+          "name": "光阴",
+          "description": "我命光阴，回溯自身冷却大幅减少",
+          "icon": "⏰",
+          "effectModifier": {},
+          "cooldownModifier": -100
+        }
+      ],
+      "branchUnlockLevel": 2,
+      "combatTrigger": ["write_letter", "reply", "favorite", "browse"]
+    },
+    {
+      "id": "warden_1",
+      "name": "聚气",
+      "category": "warden",
+      "categoryLabel": "守护术",
+      "description": "凝聚天地灵气于一身。提升灵气上限与恢复速度。",
+      "icon": "🔮",
+      "color": "#06d6a0",
+      "rarity": "common",
+      "maxLevel": 10,
+      "baseAuraCost": 0,
+      "baseCooldown": 0,
+      "unlockLevel": 1,
+      "prerequisites": [],
+      "effects": [
+        {
+          "type": "buff",
+          "target": "aura_max",
+          "value": 20,
+          "scalePerLevel": 10,
+          "description": "被动提升灵气上限"
+        },
+        {
+          "type": "buff",
+          "target": "aura_regen",
+          "value": 1,
+          "scalePerLevel": 0.5,
+          "description": "被动提升灵气恢复速率/秒"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "气海",
+          "description": "气吞山河，灵气上限大幅提升",
+          "icon": "🏔️",
+          "effectModifier": { "value": 15 }
+        },
+        {
+          "id": "path_b",
+          "name": "生机",
+          "description": "生生不息，灵气恢复速率加倍",
+          "icon": "🌱",
+          "effectModifier": { "value": 2 }
+        }
+      ],
+      "branchUnlockLevel": 3,
+      "combatTrigger": ["write_letter", "reply", "favorite", "browse"]
+    },
+    {
+      "id": "warden_2",
+      "name": "回春",
+      "category": "warden",
+      "categoryLabel": "守护术",
+      "description": "妙手回春。主动释放恢复大量灵气。",
+      "icon": "💚",
+      "color": "#06d6a0",
+      "rarity": "rare",
+      "maxLevel": 8,
+      "baseAuraCost": 0,
+      "baseCooldown": 120,
+      "unlockLevel": 3,
+      "prerequisites": ["warden_1"],
+      "effects": [
+        {
+          "type": "heal",
+          "target": "aura_restore",
+          "value": 50,
+          "scalePerLevel": 20,
+          "description": "恢复灵气值"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "复苏",
+          "description": "万物复苏，恢复更多灵气",
+          "icon": "🌿",
+          "effectModifier": { "value": 30 }
+        },
+        {
+          "id": "path_b",
+          "name": "续航",
+          "description": "持久续航，冷却减少",
+          "icon": "🔋",
+          "effectModifier": {},
+          "cooldownModifier": -40
+        }
+      ],
+      "branchUnlockLevel": 4,
+      "combatTrigger": ["write_letter", "reply", "favorite", "browse"]
+    },
+    {
+      "id": "warden_3",
+      "name": "圣域",
+      "category": "warden",
+      "categoryLabel": "守护术",
+      "description": "展开星之圣域。一段时间内技能不消耗灵气。",
+      "icon": "✨",
+      "color": "#118ab2",
+      "rarity": "legendary",
+      "maxLevel": 3,
+      "baseAuraCost": 80,
+      "baseCooldown": 600,
+      "unlockLevel": 7,
+      "prerequisites": ["warden_2"],
+      "effects": [
+        {
+          "type": "buff",
+          "target": "aura_free_window",
+          "value": 10,
+          "scalePerLevel": 5,
+          "description": "灵气免费窗口持续时间(秒)"
+        }
+      ],
+      "branches": [
+        {
+          "id": "path_a",
+          "name": "神佑",
+          "description": "神之庇佑，延长免费窗口",
+          "icon": "🙏",
+          "effectModifier": { "value": 10 }
+        },
+        {
+          "id": "path_b",
+          "name": "永恒守护",
+          "description": "守护常在，圣域冷却大幅降低",
+          "icon": "💖",
+          "effectModifier": {},
+          "cooldownModifier": -200
+        }
+      ],
+      "branchUnlockLevel": 2,
+      "combatTrigger": ["write_letter", "reply", "favorite", "browse"]
+    }
+  ]
+}
