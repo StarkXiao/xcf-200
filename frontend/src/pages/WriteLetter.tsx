@@ -1,17 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Send, Eye, EyeOff, Sparkles, Feather, Target, Zap,
-  Clock, Gauge, Calendar as CalendarIcon, AlertTriangle, Heart, Shield
+  Clock, Gauge, Calendar as CalendarIcon, AlertTriangle, Heart, Shield,
+  Save, History, X, Check, FileText, AlertCircle, RotateCcw
 } from 'lucide-react';
 import EmotionTag from '@/components/Emotion/EmotionTag';
 import { lettersApi } from '@/api/letters';
+import { draftsApi } from '@/api/drafts';
 import { guardianStationApi } from '@/api/guardianStation';
 import { emotionsApi } from '@/api/emotions';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
-import type { Emotion, ContentAnalysisResult } from '@/types';
-import { getSpeedInfo } from '@/utils/helpers';
+import DraftVersionHistory from '@/components/Drafts/DraftVersionHistory';
+import type { Emotion, ContentAnalysisResult, Draft, DraftContentSnapshot } from '@/types';
+import { getSpeedInfo, cn } from '@/utils/helpers';
 
 const recipientTypes = [
   { value: 'future', label: '未来的人', icon: '🔮', desc: '给未来的自己或某人' },
@@ -20,9 +23,12 @@ const recipientTypes = [
   { value: 'unknown', label: '未知宇宙', icon: '✨', desc: '随机漂流到未知目的地' },
 ];
 
+type AutoSaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
 export default function WriteLetter() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { user, isAuthenticated } = useAuthStore();
   const { showToast, setLoading } = useUIStore();
 
@@ -32,6 +38,8 @@ export default function WriteLetter() {
     templateTitle?: string;
     prefillRecipient?: string;
   } | null;
+
+  const draftIdFromUrl = searchParams.get('draftId');
 
   const [recipient, setRecipient] = useState(templateState?.prefillRecipient || '');
   const [recipientType, setRecipientType] = useState('future');
@@ -53,23 +61,31 @@ export default function WriteLetter() {
   const [riskAnalyzing, setRiskAnalyzing] = useState(false);
   const riskAnalysisTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [loadingDraft, setLoadingDraft] = useState(false);
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+  const [unsentDraftHint, setUnsentDraftHint] = useState<Draft | null>(null);
+
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const forcedSaveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const contentRef = useRef({ recipient, recipientType, title, content, selectedEmotions, isPublic, isAnonymous, deliverySpeed, scheduledDelivery, scheduledDate, scheduledTime });
+
   const deliverySpeedOptions = [
-    {
-      value: 'standard' as const,
-      ...getSpeedInfo('standard'),
-      recommend: true,
-    },
-    {
-      value: 'express' as const,
-      ...getSpeedInfo('express'),
-      recommend: false,
-    },
-    {
-      value: 'instant' as const,
-      ...getSpeedInfo('instant'),
-      recommend: false,
-    },
+    { value: 'standard' as const, ...getSpeedInfo('standard'), recommend: true },
+    { value: 'express' as const, ...getSpeedInfo('express'), recommend: false },
+    { value: 'instant' as const, ...getSpeedInfo('instant'), recommend: false },
   ];
+
+  useEffect(() => {
+    contentRef.current = {
+      recipient, recipientType, title, content,
+      selectedEmotions, isPublic, isAnonymous, deliverySpeed,
+      scheduledDelivery, scheduledDate, scheduledTime
+    };
+  }, [recipient, recipientType, title, content, selectedEmotions, isPublic, isAnonymous, deliverySpeed, scheduledDelivery, scheduledDate, scheduledTime]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -77,8 +93,51 @@ export default function WriteLetter() {
       return;
     }
     fetchEmotions();
+    if (draftIdFromUrl) {
+      loadDraft(draftIdFromUrl);
+    } else {
+      checkForRecentDrafts();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    forcedSaveTimer.current = setInterval(() => {
+      if (hasMeaningfulContent() && draftId) {
+        triggerAutoSave(true);
+      }
+    }, 60000);
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasMeaningfulContent()) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      if (forcedSaveTimer.current) clearInterval(forcedSaveTimer.current);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+      if (riskAnalysisTimer.current) clearTimeout(riskAnalysisTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!hasMeaningfulContent()) return;
+
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      triggerAutoSave(false);
+    }, 3000);
+
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, content, recipient, recipientType, selectedEmotions, scheduledDelivery, scheduledDate, scheduledTime, deliverySpeed, isPublic, isAnonymous]);
 
   useEffect(() => {
     const combinedContent = title + '\n' + content;
@@ -87,9 +146,7 @@ export default function WriteLetter() {
       return;
     }
 
-    if (riskAnalysisTimer.current) {
-      clearTimeout(riskAnalysisTimer.current);
-    }
+    if (riskAnalysisTimer.current) clearTimeout(riskAnalysisTimer.current);
 
     riskAnalysisTimer.current = setTimeout(async () => {
       try {
@@ -98,9 +155,7 @@ export default function WriteLetter() {
           content: combinedContent,
           contentType: 'letter',
         });
-        if (res.success) {
-          setRiskAnalysis(res.data);
-        }
+        if (res.success) setRiskAnalysis(res.data);
       } catch (err) {
         // ignore
       } finally {
@@ -109,11 +164,161 @@ export default function WriteLetter() {
     }, 800);
 
     return () => {
-      if (riskAnalysisTimer.current) {
-        clearTimeout(riskAnalysisTimer.current);
-      }
+      if (riskAnalysisTimer.current) clearTimeout(riskAnalysisTimer.current);
     };
   }, [title, content]);
+
+  const hasMeaningfulContent = useCallback(() => {
+    const c = contentRef.current;
+    return c.title.trim().length > 0 || c.content.trim().length > 10 || c.recipient.trim().length > 0;
+  }, []);
+
+  const checkForRecentDrafts = async () => {
+    if (!user) return;
+    try {
+      const res = await draftsApi.getDrafts(user.id, { limit: 3, sort: 'updated' });
+      if (res.success && res.data && res.data.length > 0) {
+        const latest = res.data[0];
+        const hoursSince = (Date.now() - new Date(latest.updatedAt).getTime()) / 3600000;
+        if (hoursSince < 24 && latest.wordCount > 50) {
+          setUnsentDraftHint(latest);
+        }
+      }
+    } catch { /* ignore */ }
+  };
+
+  const loadDraft = async (id: string) => {
+    try {
+      setLoadingDraft(true);
+      const res = await draftsApi.getDraft(id);
+      if (res.success && res.data) {
+        const d = res.data;
+        setDraftId(d.id);
+        setRecipient(d.recipient);
+        setRecipientType(d.recipientType);
+        setTitle(d.title);
+        setContent(d.content);
+        setSelectedEmotions(d.emotions || []);
+        setIsPublic(d.isPublic);
+        setIsAnonymous(d.isAnonymous);
+        setDeliverySpeed(d.deliverySpeed as any);
+        setScheduledDelivery(d.scheduledDelivery);
+        setScheduledDate(d.scheduledDate);
+        setScheduledTime(d.scheduledTime);
+        setLastSavedAt(d.autoSavedAt || d.updatedAt);
+        showToast({ type: 'info', message: `已加载草稿「${d.title || '未命名'}」` });
+      }
+    } catch (err) {
+      showToast({ type: 'error', message: '加载草稿失败' });
+    } finally {
+      setLoadingDraft(false);
+    }
+  };
+
+  const triggerAutoSave = useCallback(async (isForced: boolean) => {
+    if (!user) return;
+    if (!hasMeaningfulContent()) return;
+
+    setAutoSaveStatus('saving');
+    const c = contentRef.current;
+
+    try {
+      if (!draftId) {
+        const res = await draftsApi.createDraft({
+          senderId: user.id,
+          recipient: c.recipient,
+          recipientType: c.recipientType,
+          title: c.title,
+          content: c.content,
+          emotions: c.selectedEmotions,
+          isPublic: c.isPublic,
+          isAnonymous: c.isAnonymous,
+          deliverySpeed: c.deliverySpeed,
+          scheduledDelivery: c.scheduledDelivery,
+          scheduledDate: c.scheduledDate,
+          scheduledTime: c.scheduledTime,
+        });
+        if (res.success && res.data) {
+          setDraftId(res.data.id);
+        }
+      } else {
+        await draftsApi.updateDraft(draftId, {
+          recipient: c.recipient,
+          recipientType: c.recipientType,
+          title: c.title,
+          content: c.content,
+          emotions: c.selectedEmotions,
+          isPublic: c.isPublic,
+          isAnonymous: c.isAnonymous,
+          deliverySpeed: c.deliverySpeed,
+          scheduledDelivery: c.scheduledDelivery,
+          scheduledDate: c.scheduledDate,
+          scheduledTime: c.scheduledTime,
+          autoSave: true,
+        });
+      }
+      setAutoSaveStatus('saved');
+      setLastSavedAt(new Date().toISOString());
+      setTimeout(() => setAutoSaveStatus('idle'), 2500);
+    } catch (err) {
+      setAutoSaveStatus('error');
+      if (!isForced) {
+        showToast({ type: 'warning', message: '自动保存失败，将稍后重试' });
+      }
+    }
+  }, [draftId, hasMeaningfulContent, showToast, user]);
+
+  const handleManualSave = async () => {
+    if (!user) return;
+    if (!hasMeaningfulContent()) {
+      showToast({ type: 'warning', message: '内容不足以保存为草稿' });
+      return;
+    }
+
+    setAutoSaveStatus('saving');
+    try {
+      const c = contentRef.current;
+      if (!draftId) {
+        const res = await draftsApi.createDraft({
+          senderId: user.id,
+          recipient: c.recipient, recipientType: c.recipientType, title: c.title, content: c.content,
+          emotions: c.selectedEmotions, isPublic: c.isPublic, isAnonymous: c.isAnonymous,
+          deliverySpeed: c.deliverySpeed, scheduledDelivery: c.scheduledDelivery,
+          scheduledDate: c.scheduledDate, scheduledTime: c.scheduledTime,
+        });
+        if (res.success && res.data) setDraftId(res.data.id);
+      } else {
+        await draftsApi.updateDraft(draftId, {
+          recipient: c.recipient, recipientType: c.recipientType, title: c.title, content: c.content,
+          emotions: c.selectedEmotions, isPublic: c.isPublic, isAnonymous: c.isAnonymous,
+          deliverySpeed: c.deliverySpeed, scheduledDelivery: c.scheduledDelivery,
+          scheduledDate: c.scheduledDate, scheduledTime: c.scheduledTime,
+          note: '手动保存',
+        });
+      }
+      setAutoSaveStatus('saved');
+      setLastSavedAt(new Date().toISOString());
+      showToast({ type: 'success', message: '草稿已保存 ✨' });
+      setTimeout(() => setAutoSaveStatus('idle'), 2500);
+    } catch (err: any) {
+      setAutoSaveStatus('error');
+      showToast({ type: 'error', message: err.response?.data?.message || '保存失败' });
+    }
+  };
+
+  const handleRestoreSnapshot = (snapshot: DraftContentSnapshot) => {
+    setRecipient(snapshot.recipient);
+    setRecipientType(snapshot.recipientType);
+    setTitle(snapshot.title);
+    setContent(snapshot.content);
+    setSelectedEmotions(snapshot.emotions);
+    setIsPublic(snapshot.isPublic);
+    setIsAnonymous(snapshot.isAnonymous);
+    setDeliverySpeed(snapshot.deliverySpeed);
+    setScheduledDelivery(snapshot.scheduledDelivery);
+    setScheduledDate(snapshot.scheduledDate);
+    setScheduledTime(snapshot.scheduledTime);
+  };
 
   const fetchEmotions = async () => {
     try {
@@ -128,9 +333,7 @@ export default function WriteLetter() {
     setSelectedEmotions((prev) =>
       prev.includes(name)
         ? prev.filter((e) => e !== name)
-        : prev.length < 5
-          ? [...prev, name]
-          : prev
+        : prev.length < 5 ? [...prev, name] : prev
     );
   };
 
@@ -152,32 +355,34 @@ export default function WriteLetter() {
     if (scheduledDelivery && scheduledDate && scheduledTime) {
       scheduledDeliveryAt = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
       if (new Date(scheduledDeliveryAt).getTime() < Date.now()) {
-        setErrors(prev => ({
-          ...prev,
-          scheduled: '定时送达时间必须晚于当前时间',
-        }));
+        setErrors(prev => ({ ...prev, scheduled: '定时送达时间必须晚于当前时间' }));
         return;
       }
     }
 
     try {
       setLoading(true);
-      const res = await lettersApi.createLetter(user.id, user.username, {
-        recipient: recipient.trim(),
-        recipientType,
-        title: title.trim(),
-        content: content.trim(),
-        emotions: selectedEmotions,
-        isPublic,
-        isAnonymous,
-        deliverySpeed,
-        scheduledDeliveryAt,
-      });
-      if (res.success && res.data) {
-        showToast({ type: 'success', message: res.message || '信件已成功寄出！' });
-        setTimeout(() => navigate(`/letter/${res.data.id}`), 800);
+      if (draftId) {
+        const res = await draftsApi.submitDraft(draftId, { senderName: user.username, scheduledDeliveryAt });
+        if (res.success && res.data) {
+          showToast({ type: 'success', message: res.message || '信件已成功寄出！' });
+          setTimeout(() => navigate(`/letter/${res.data.letter.id}`), 800);
+        } else {
+          showToast({ type: 'error', message: res.message || '寄信失败' });
+        }
       } else {
-        showToast({ type: 'error', message: res.message || '寄信失败' });
+        const res = await lettersApi.createLetter(user.id, user.username, {
+          recipient: recipient.trim(), recipientType,
+          title: title.trim(), content: content.trim(),
+          emotions: selectedEmotions, isPublic, isAnonymous,
+          deliverySpeed, scheduledDeliveryAt,
+        });
+        if (res.success && res.data) {
+          showToast({ type: 'success', message: res.message || '信件已成功寄出！' });
+          setTimeout(() => navigate(`/letter/${res.data.id}`), 800);
+        } else {
+          showToast({ type: 'error', message: res.message || '寄信失败' });
+        }
       }
     } catch (err: any) {
       showToast({ type: 'error', message: err.response?.data?.message || '寄信失败，请重试' });
@@ -185,6 +390,31 @@ export default function WriteLetter() {
       setLoading(false);
     }
   };
+
+  const formatLastSaved = () => {
+    if (!lastSavedAt) return '尚未保存';
+    const d = new Date(lastSavedAt);
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+    return d.toLocaleDateString('zh-CN');
+  };
+
+  const autoSaveIcon = autoSaveStatus === 'saving' ? (
+    <span className="w-3.5 h-3.5 border-2 border-aurora/30 border-t-aurora rounded-full animate-spin" />
+  ) : autoSaveStatus === 'saved' ? (
+    <Check className="w-3.5 h-3.5 text-nebula-mint" />
+  ) : autoSaveStatus === 'error' ? (
+    <AlertCircle className="w-3.5 h-3.5 text-red-400" />
+  ) : (
+    <Save className="w-3.5 h-3.5" />
+  );
+
+  const autoSaveLabel = autoSaveStatus === 'saving' ? '保存中...'
+    : autoSaveStatus === 'saved' ? '已保存'
+    : autoSaveStatus === 'error' ? '保存失败'
+    : '草稿';
 
   return (
     <div className="relative z-10 py-8 sm:py-12">
@@ -201,15 +431,91 @@ export default function WriteLetter() {
           </p>
         </div>
 
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className="btn-secondary px-5 py-2.5 text-sm flex items-center gap-2"
-          >
-            {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {showPreview ? '返回编辑' : '预览效果'}
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className={cn(
+              'inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all',
+              autoSaveStatus === 'saved' ? 'bg-nebula-mint/10 text-nebula-mint border-nebula-mint/30' :
+              autoSaveStatus === 'saving' ? 'bg-aurora/10 text-aurora border-aurora/30' :
+              autoSaveStatus === 'error' ? 'bg-red-500/10 text-red-400 border-red-500/30' :
+              'bg-white/5 text-white/60 border-white/10'
+            )}>
+              {autoSaveIcon}
+              <span>{autoSaveLabel}</span>
+              <span className="opacity-60">· {formatLastSaved()}</span>
+            </div>
+            {draftId && (
+              <button
+                onClick={() => setShowVersionHistory(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:text-white transition-all"
+              >
+                <History className="w-3.5 h-3.5" />
+                版本历史
+              </button>
+            )}
+            <button
+              onClick={handleManualSave}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-starlight/10 text-starlight border border-starlight/30 hover:bg-starlight/20 transition-all"
+            >
+              <Save className="w-3.5 h-3.5" />
+              手动保存
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <LinkLike onClick={() => navigate('/drafts')} className="text-xs text-white/60 hover:text-aurora transition-colors inline-flex items-center gap-1">
+              <FileText className="w-3.5 h-3.5" />
+              草稿箱
+            </LinkLike>
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className="btn-secondary px-5 py-2.5 text-sm flex items-center gap-2"
+            >
+              {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showPreview ? '返回编辑' : '预览效果'}
+            </button>
+          </div>
         </div>
+
+        {loadingDraft && (
+          <div className="glass-card p-8 mb-6 text-center animate-pulse">
+            <div className="w-10 h-10 mx-auto mb-3 border-3 border-aurora/30 border-t-aurora rounded-full animate-spin" />
+            <p className="text-white/60">正在加载草稿...</p>
+          </div>
+        )}
+
+        {unsentDraftHint && (
+          <div className="glass-card p-4 mb-6 border border-aurora/30 bg-aurora/5 animate-fade-in flex items-center justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-aurora/15 flex items-center justify-center shrink-0 mt-0.5">
+                <RotateCcw className="w-4 h-4 text-aurora" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white mb-0.5">发现未完成的草稿</p>
+                <p className="text-xs text-white/60 truncate">
+                  《{unsentDraftHint.title || '未命名'}》· {unsentDraftHint.wordCount}字 · 上次更新 {formatLastSaved.call({ lastSavedAt: unsentDraftHint.updatedAt }) || new Date(unsentDraftHint.updatedAt).toLocaleDateString('zh-CN')}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setUnsentDraftHint(null)}
+                className="p-1.5 rounded-lg text-white/40 hover:text-white/60 hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  navigate(`/write?draftId=${unsentDraftHint.id}`, { replace: true });
+                }}
+                className="btn-primary py-2 px-4 text-xs flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                继续写作
+              </button>
+            </div>
+          </div>
+        )}
 
         {showPreview ? (
           <div className="paper-card shadow-paper-lg p-6 sm:p-10 animate-scale-in">
@@ -223,7 +529,7 @@ export default function WriteLetter() {
                   {title || '(信件标题)'}
                 </h2>
               </div>
-              <div className="text-sm text-cosmic-700/70 mb-6 text-center pb-4 border-b border-dashed border-cosmic-900/20">
+              <div className="mb-6 text-center pb-4 border-b border-dashed border-cosmic-900/20 text-sm text-cosmic-700/70">
                 {isAnonymous ? '匿名星人' : user?.username} · {new Date().toLocaleDateString('zh-CN')}
               </div>
               <div className="font-serif-sc text-base sm:text-lg leading-loose text-cosmic-800 whitespace-pre-line min-h-[200px]">
@@ -250,11 +556,12 @@ export default function WriteLetter() {
                   <button
                     key={type.value}
                     onClick={() => setRecipientType(type.value)}
-                    className={`p-4 rounded-xl border-2 transition-all duration-300 text-left ${
+                    className={cn(
+                      'p-4 rounded-xl border-2 transition-all duration-300 text-left',
                       recipientType === type.value
                         ? 'border-aurora/60 bg-aurora/10 shadow-glow'
                         : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
-                    }`}
+                    )}
                   >
                     <div className="text-2xl mb-2">{type.icon}</div>
                     <div className="font-medium text-white text-sm mb-1">{type.label}</div>
@@ -283,11 +590,12 @@ export default function WriteLetter() {
                         key={option.value}
                         type="button"
                         onClick={() => setDeliverySpeed(option.value)}
-                        className={`p-4 rounded-xl border-2 text-left transition-all duration-300 relative ${
+                        className={cn(
+                          'p-4 rounded-xl border-2 text-left transition-all duration-300 relative',
                           isSelected
                             ? 'border-starlight/60 bg-starlight/10 shadow-glow-sm'
                             : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
-                        }`}
+                        )}
                       >
                         {option.recommend && (
                           <span className="absolute -top-2 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold bg-starlight/20 text-starlight border border-starlight/40">
@@ -296,18 +604,12 @@ export default function WriteLetter() {
                         )}
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-2xl">{option.icon}</span>
-                          <span className={`font-semibold text-sm ${
-                            isSelected ? 'text-starlight' : 'text-white'
-                          }`}>
+                          <span className={cn('font-semibold text-sm', isSelected ? 'text-starlight' : 'text-white')}>
                             {option.label}
                           </span>
                         </div>
-                        <p className="text-xs text-white/50 mb-2 leading-relaxed">
-                          {option.description}
-                        </p>
-                        <div className={`text-xs font-medium flex items-center gap-1 ${
-                          isSelected ? 'text-starlight' : 'text-white/60'
-                        }`}>
+                        <p className="text-xs text-white/50 mb-2 leading-relaxed">{option.description}</p>
+                        <div className={cn('text-xs font-medium flex items-center gap-1', isSelected ? 'text-starlight' : 'text-white/60')}>
                           <Clock className="w-3 h-3" />
                           {option.timeText}
                         </div>
@@ -393,9 +695,10 @@ export default function WriteLetter() {
                     onChange={(e) => setRecipient(e.target.value)}
                     placeholder="如：未来的自己、平行世界的Ta、童年的玩伴..."
                     maxLength={30}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white/60 text-cosmic-900 placeholder-cosmic-700/40 focus:outline-none focus:border-cosmic-400 focus:ring-2 focus:ring-cosmic-400/20 transition-all ${
+                    className={cn(
+                      'w-full px-4 py-3 rounded-xl border bg-white/60 text-cosmic-900 placeholder-cosmic-700/40 focus:outline-none focus:border-cosmic-400 focus:ring-2 focus:ring-cosmic-400/20 transition-all',
                       errors.recipient ? 'border-red-400' : 'border-cosmic-200'
-                    }`}
+                    )}
                   />
                   {errors.recipient && <p className="mt-1.5 text-xs text-red-500">{errors.recipient}</p>}
                 </div>
@@ -411,9 +714,10 @@ export default function WriteLetter() {
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="给这封信起个名字吧..."
                     maxLength={50}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white/60 text-cosmic-900 placeholder-cosmic-700/40 focus:outline-none focus:border-cosmic-400 focus:ring-2 focus:ring-cosmic-400/20 transition-all font-serif-sc text-lg ${
+                    className={cn(
+                      'w-full px-4 py-3 rounded-xl border bg-white/60 text-cosmic-900 placeholder-cosmic-700/40 focus:outline-none focus:border-cosmic-400 focus:ring-2 focus:ring-cosmic-400/20 transition-all font-serif-sc text-lg',
                       errors.title ? 'border-red-400' : 'border-cosmic-200'
-                    }`}
+                    )}
                   />
                   {errors.title && <p className="mt-1.5 text-xs text-red-500">{errors.title}</p>}
                 </div>
@@ -424,7 +728,7 @@ export default function WriteLetter() {
                       <span className="text-lg">📝</span>
                       信件内容 <span className="text-red-500">*</span>
                     </span>
-                    <span className={`text-xs ${content.length >= 500 ? 'text-nebula-orange' : 'text-cosmic-700/50'}`}>
+                    <span className={cn('text-xs', content.length >= 500 ? 'text-nebula-orange' : 'text-cosmic-700/50')}>
                       {content.length} / 5000
                     </span>
                   </label>
@@ -433,9 +737,10 @@ export default function WriteLetter() {
                     onChange={(e) => setContent(e.target.value.slice(0, 5000))}
                     placeholder={`亲爱的${recipient || '(收件人)'}：\n\n在这里写下你的心里话...\n\n也许未来的某一天，有人会收到这封信。`}
                     rows={10}
-                    className={`w-full px-4 py-3 rounded-xl border bg-white/60 text-cosmic-900 placeholder-cosmic-700/40 focus:outline-none focus:border-cosmic-400 focus:ring-2 focus:ring-cosmic-400/20 transition-all font-serif-sc leading-loose resize-none ${
+                    className={cn(
+                      'w-full px-4 py-3 rounded-xl border bg-white/60 text-cosmic-900 placeholder-cosmic-700/40 focus:outline-none focus:border-cosmic-400 focus:ring-2 focus:ring-cosmic-400/20 transition-all font-serif-sc leading-loose resize-none',
                       errors.content ? 'border-red-400' : 'border-cosmic-200'
-                    }`}
+                    )}
                   />
                   {errors.content && <p className="mt-1.5 text-xs text-red-500">{errors.content}</p>}
 
@@ -447,71 +752,53 @@ export default function WriteLetter() {
                   )}
 
                   {!riskAnalyzing && riskAnalysis && riskAnalysis.level !== 'safe' && (
-                    <div
-                      className={`mt-3 p-4 rounded-xl border flex flex-col gap-3 ${
-                        riskAnalysis.level === 'severe'
-                          ? 'bg-red-50 border-red-300'
-                          : riskAnalysis.level === 'moderate'
-                          ? 'bg-orange-50 border-orange-300'
-                          : 'bg-yellow-50 border-yellow-300'
-                      }`}
-                    >
+                    <div className={cn(
+                      'mt-3 p-4 rounded-xl border flex flex-col gap-3',
+                      riskAnalysis.level === 'severe' ? 'bg-red-50 border-red-300'
+                        : riskAnalysis.level === 'moderate' ? 'bg-orange-50 border-orange-300'
+                        : 'bg-yellow-50 border-yellow-300'
+                    )}>
                       <div className="flex items-start gap-3">
-                        <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                            riskAnalysis.level === 'severe'
-                              ? 'bg-red-100'
-                              : riskAnalysis.level === 'moderate'
-                              ? 'bg-orange-100'
-                              : 'bg-yellow-100'
-                          }`}
-                        >
+                        <div className={cn(
+                          'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
+                          riskAnalysis.level === 'severe' ? 'bg-red-100'
+                            : riskAnalysis.level === 'moderate' ? 'bg-orange-100'
+                            : 'bg-yellow-100'
+                        )}>
                           {riskAnalysis.level === 'severe' || riskAnalysis.level === 'moderate' ? (
-                            <AlertTriangle
-                              className={`w-5 h-5 ${
-                                riskAnalysis.level === 'severe'
-                                  ? 'text-red-500'
-                                  : 'text-orange-500'
-                              }`}
-                            />
+                            <AlertTriangle className={cn(
+                              'w-5 h-5',
+                              riskAnalysis.level === 'severe' ? 'text-red-500' : 'text-orange-500'
+                            )} />
                           ) : (
                             <Heart className="w-5 h-5 text-yellow-600" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <p
-                              className={`font-semibold ${
-                                riskAnalysis.level === 'severe'
-                                  ? 'text-red-800'
-                                  : riskAnalysis.level === 'moderate'
-                                  ? 'text-orange-800'
-                                  : 'text-yellow-800'
-                              }`}
-                            >
+                            <p className={cn(
+                              'font-semibold',
+                              riskAnalysis.level === 'severe' ? 'text-red-800'
+                                : riskAnalysis.level === 'moderate' ? 'text-orange-800'
+                                : 'text-yellow-800'
+                            )}>
                               {riskAnalysis.levelInfo.label}
                             </p>
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                riskAnalysis.level === 'severe'
-                                  ? 'bg-red-200 text-red-800'
-                                  : riskAnalysis.level === 'moderate'
-                                  ? 'bg-orange-200 text-orange-800'
-                                  : 'bg-yellow-200 text-yellow-800'
-                              }`}
-                            >
+                            <span className={cn(
+                              'px-2 py-0.5 rounded-full text-xs font-medium',
+                              riskAnalysis.level === 'severe' ? 'bg-red-200 text-red-800'
+                                : riskAnalysis.level === 'moderate' ? 'bg-orange-200 text-orange-800'
+                                : 'bg-yellow-200 text-yellow-800'
+                            )}>
                               {riskAnalysis.score} 分
                             </span>
                           </div>
-                          <p
-                            className={`text-sm leading-relaxed ${
-                              riskAnalysis.level === 'severe'
-                                ? 'text-red-700'
-                                : riskAnalysis.level === 'moderate'
-                                ? 'text-orange-700'
-                                : 'text-yellow-700'
-                            }`}
-                          >
+                          <p className={cn(
+                            'text-sm leading-relaxed',
+                            riskAnalysis.level === 'severe' ? 'text-red-700'
+                              : riskAnalysis.level === 'moderate' ? 'text-orange-700'
+                              : 'text-yellow-700'
+                          )}>
                             {riskAnalysis.level === 'severe' &&
                               '我们检测到内容中可能涉及严重的自伤或伤害风险。如果你或身边的人正处于困境，请一定记得，生命是最宝贵的。请拨打全国心理援助热线：400-161-9995（24小时）。'}
                             {riskAnalysis.level === 'moderate' &&
@@ -526,13 +813,12 @@ export default function WriteLetter() {
                           {riskAnalysis.details.map((detail, idx) => (
                             <span
                               key={idx}
-                              className={`px-2 py-1 rounded-lg text-xs ${
-                                riskAnalysis.level === 'severe'
-                                  ? 'bg-red-100 text-red-700'
-                                  : riskAnalysis.level === 'moderate'
-                                  ? 'bg-orange-100 text-orange-700'
+                              className={cn(
+                                'px-2 py-1 rounded-lg text-xs',
+                                riskAnalysis.level === 'severe' ? 'bg-red-100 text-red-700'
+                                  : riskAnalysis.level === 'moderate' ? 'bg-orange-100 text-orange-700'
                                   : 'bg-yellow-100 text-yellow-700'
-                              }`}
+                              )}
                             >
                               检测到：{detail.keywords.join('、')}
                             </span>
@@ -540,15 +826,12 @@ export default function WriteLetter() {
                         </div>
                       )}
                       <div className="pt-2 mt-2 border-t border-dashed border-current/20">
-                        <p
-                          className={`text-xs flex items-center gap-1 ${
-                            riskAnalysis.level === 'severe'
-                              ? 'text-red-600'
-                              : riskAnalysis.level === 'moderate'
-                              ? 'text-orange-600'
-                              : 'text-yellow-600'
-                          }`}
-                        >
+                        <p className={cn(
+                          'text-xs flex items-center gap-1',
+                          riskAnalysis.level === 'severe' ? 'text-red-600'
+                            : riskAnalysis.level === 'moderate' ? 'text-orange-600'
+                            : 'text-yellow-600'
+                        )}>
                           <Shield className="w-3 h-3" />
                           匿名守护站将关注此内容，守护员会提供关怀支持
                         </p>
@@ -621,7 +904,10 @@ export default function WriteLetter() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
               <button
-                onClick={() => navigate(-1)}
+                onClick={() => {
+                  if (hasMeaningfulContent() && !confirm('离开会丢失未保存内容，确定吗？')) return;
+                  navigate(-1);
+                }}
                 className="btn-secondary px-8 py-3.5"
               >
                 取消
@@ -638,6 +924,21 @@ export default function WriteLetter() {
           </div>
         )}
       </div>
+
+      <DraftVersionHistory
+        draftId={draftId || ''}
+        open={showVersionHistory}
+        onClose={() => setShowVersionHistory(false)}
+        onRestore={(snapshot) => handleRestoreSnapshot(snapshot)}
+      />
     </div>
+  );
+}
+
+function LinkLike({ onClick, className, children }: { onClick: () => void; className?: string; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} className={className}>
+      {children}
+    </button>
   );
 }

@@ -23,6 +23,7 @@ import FutureMailbox from '@/pages/FutureMailbox';
 import RelationNetwork from '@/pages/RelationNetwork';
 import AchievementCenter from '@/pages/AchievementCenter';
 import ParallelMatch from '@/pages/ParallelMatch';
+import Drafts from '@/pages/Drafts';
 import NotFound from '@/pages/NotFound';
 
 function ScrollToTop() {
@@ -61,6 +62,7 @@ function Layout() {
           <Route path="/activities" element={<Community />} />
           <Route path="/activities/:id" element={<ActivityDetail />} />
           <Route path="/activities/:activityId/works/:workId" element={<WorkDetail />} />
+          <Route path="/drafts" element={<Drafts />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

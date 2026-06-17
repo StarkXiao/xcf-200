@@ -1101,3 +1101,104 @@ export interface GuardianStationStats {
     activeToday: number;
   };
 }
+
+export interface DraftVersion {
+  id: string;
+  draftId: string;
+  version: number;
+  snapshot: DraftContentSnapshot;
+  note: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface DraftContentSnapshot {
+  recipient: string;
+  recipientType: string;
+  title: string;
+  content: string;
+  emotions: string[];
+  isPublic: boolean;
+  isAnonymous: boolean;
+  deliverySpeed: 'standard' | 'express' | 'instant';
+  scheduledDelivery: boolean;
+  scheduledDate: string;
+  scheduledTime: string;
+}
+
+export interface Draft {
+  id: string;
+  senderId: string;
+  recipient: string;
+  recipientType: string;
+  title: string;
+  content: string;
+  emotions: string[];
+  isPublic: boolean;
+  isAnonymous: boolean;
+  deliverySpeed: 'standard' | 'express' | 'instant';
+  scheduledDelivery: boolean;
+  scheduledDate: string;
+  scheduledTime: string;
+  autoSavedAt: string | null;
+  versionCount: number;
+  wordCount: number;
+  createdAt: string;
+  updatedAt: string;
+  lastOpenedAt: string;
+}
+
+export interface DraftCreateData {
+  senderId: string;
+  recipient?: string;
+  recipientType?: string;
+  title?: string;
+  content?: string;
+  emotions?: string[];
+  isPublic?: boolean;
+  isAnonymous?: boolean;
+  deliverySpeed?: 'standard' | 'express' | 'instant';
+  scheduledDelivery?: boolean;
+  scheduledDate?: string;
+  scheduledTime?: string;
+}
+
+export interface DraftUpdateData {
+  recipient?: string;
+  recipientType?: string;
+  title?: string;
+  content?: string;
+  emotions?: string[];
+  isPublic?: boolean;
+  isAnonymous?: boolean;
+  deliverySpeed?: 'standard' | 'express' | 'instant';
+  scheduledDelivery?: boolean;
+  scheduledDate?: string;
+  scheduledTime?: string;
+  note?: string;
+}
+
+export interface DraftSubmitData {
+  scheduledDeliveryAt?: string;
+}
+
+export interface DraftValidationResult {
+  valid: boolean;
+  errors: Record<string, string>;
+  warnings: string[];
+  scheduledCheck?: {
+    isPast: boolean;
+    needsAdjustment: boolean;
+    suggestedDate?: string;
+    suggestedTime?: string;
+  };
+}
+
+export interface DraftStats {
+  total: number;
+  autoSaved: number;
+  scheduled: number;
+  wordTotal: number;
+  versionsTotal: number;
+  lastDraftAt: string | null;
+}

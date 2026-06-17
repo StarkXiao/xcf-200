@@ -18,6 +18,8 @@ import { userApi } from '@/api/user';
 import { lettersApi } from '@/api/letters';
 import { activitiesApi } from '@/api/activities';
 import { favoritesApi, type GroupWithCount } from '@/api/favorites';
+import { draftsApi } from '@/api/drafts';
+import type { DraftStats } from '@/types';
 import useAuthStore from '@/store/useAuthStore';
 import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
@@ -58,6 +60,7 @@ export default function Profile() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [exceptionLetters, setExceptionLetters] = useState<any[]>([]);
   const [honors, setHonors] = useState<Honor[]>([]);
+  const [draftStats, setDraftStats] = useState<DraftStats | null>(null);
   const [loadingLocal, setLoadingLocal] = useState(true);
 
   const [editName, setEditName] = useState('');
@@ -94,7 +97,7 @@ export default function Profile() {
     if (!user) return;
     try {
       setLoadingLocal(true);
-      const [lettersRes, favRes, statsRes, excRes, honorsRes, groupsRes, favStatsRes, remindersRes] = await Promise.all([
+      const [lettersRes, favRes, statsRes, excRes, honorsRes, groupsRes, favStatsRes, remindersRes, draftStatsRes] = await Promise.all([
         userApi.getUserLetters(user.id),
         favoritesApi.getFavoriteLetters(user.id),
         userApi.getStats(user.id),
@@ -103,6 +106,7 @@ export default function Profile() {
         favoritesApi.getGroups(user.id),
         favoritesApi.getStats(user.id),
         favoritesApi.getReminders(user.id),
+        draftsApi.getStats(user.id),
       ]);
       if (lettersRes.success) setUserLetters(lettersRes.data);
       if (favRes.success) setFavorites(favRes.data as FavLetter[]);
@@ -115,6 +119,7 @@ export default function Profile() {
       }
       if (favStatsRes.success) setFavStats(favStatsRes.data);
       if (remindersRes.success) setReminders(remindersRes.data as ReminderWithLetter[]);
+      if (draftStatsRes.success) setDraftStats(draftStatsRes.data);
     } catch (err) {
       showToast({ type: 'error', message: '加载数据失败' });
     } finally {
@@ -414,6 +419,32 @@ export default function Profile() {
                 );
               })}
             </div>
+
+            <Link
+              to="/drafts"
+              className="glass-card p-4 block hover:bg-white/5 transition-all group border border-transparent hover:border-aurora/30"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-nebula-purple/15 flex items-center justify-center group-hover:bg-nebula-purple/25 transition-colors">
+                    <FileText className="w-5 h-5 text-nebula-purple" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-medium text-white">草稿箱</div>
+                    <div className="text-xs text-white/50 mt-0.5">
+                      {draftStats ? `${draftStats.total} 份草稿` : '加载中...'}
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+              </div>
+              {draftStats && draftStats.total > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-white/50">
+                  <span>自动保存 {draftStats.autoSaved} 次</span>
+                  <span>总字数 {draftStats.wordTotal}</span>
+                </div>
+              )}
+            </Link>
 
             <div className="glass-card p-2">
               <button
