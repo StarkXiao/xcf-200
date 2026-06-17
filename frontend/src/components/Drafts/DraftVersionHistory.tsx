@@ -12,9 +12,10 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onRestore?: (snapshot: DraftContentSnapshot) => void;
+  onRestored?: () => void;
 }
 
-export default function DraftVersionHistory({ draftId, open, onClose, onRestore }: Props) {
+export default function DraftVersionHistory({ draftId, open, onClose, onRestore, onRestored }: Props) {
   const [versions, setVersions] = useState<DraftVersion[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<DraftVersion | null>(null);
@@ -44,21 +45,18 @@ export default function DraftVersionHistory({ draftId, open, onClose, onRestore 
 
     try {
       setRestoring(true);
-      if (onRestore) {
-        onRestore(version.snapshot);
+      const res = await draftsApi.restoreVersion(draftId, version.id);
+      if (res.success) {
+        if (onRestore) {
+          onRestore(version.snapshot);
+        }
         showToast({ type: 'success', message: `已恢复到第 ${version.version} 版本` });
         setSelectedVersion(null);
-        onClose();
         fetchVersions();
+        if (onRestored) onRestored();
+        onClose();
       } else {
-        const res = await draftsApi.restoreVersion(draftId, version.id);
-        if (res.success) {
-          showToast({ type: 'success', message: `已恢复到第 ${version.version} 版本` });
-          setSelectedVersion(null);
-          fetchVersions();
-        } else {
-          showToast({ type: 'error', message: res.message || '恢复失败' });
-        }
+        showToast({ type: 'error', message: res.message || '恢复失败' });
       }
     } catch (err: any) {
       showToast({ type: 'error', message: err.response?.data?.message || '恢复失败' });

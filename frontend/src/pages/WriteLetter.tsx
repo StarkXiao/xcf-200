@@ -3,7 +3,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Send, Eye, EyeOff, Sparkles, Feather, Target, Zap,
   Clock, Gauge, Calendar as CalendarIcon, AlertTriangle, Heart, Shield,
-  Save, History, X, Check, FileText, AlertCircle, RotateCcw
+  Save, History, X, Check, FileText, AlertCircle, RotateCcw, CheckCircle
 } from 'lucide-react';
 import EmotionTag from '@/components/Emotion/EmotionTag';
 import { lettersApi } from '@/api/letters';
@@ -13,7 +13,7 @@ import { emotionsApi } from '@/api/emotions';
 import useAuthStore from '@/store/useAuthStore';
 import useUIStore from '@/store/useUIStore';
 import DraftVersionHistory from '@/components/Drafts/DraftVersionHistory';
-import type { Emotion, ContentAnalysisResult, Draft, DraftContentSnapshot } from '@/types';
+import type { Emotion, ContentAnalysisResult, Draft, DraftContentSnapshot, DraftValidationResult } from '@/types';
 import { getSpeedInfo, cn } from '@/utils/helpers';
 
 const recipientTypes = [
@@ -57,6 +57,9 @@ export default function WriteLetter() {
   const [emotions, setEmotions] = useState<Emotion[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitValidationOpen, setSubmitValidationOpen] = useState(false);
+  const [submitValidation, setSubmitValidation] = useState<DraftValidationResult & { riskAnalysis?: any } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [riskAnalysis, setRiskAnalysis] = useState<ContentAnalysisResult | null>(null);
   const [riskAnalyzing, setRiskAnalyzing] = useState(false);
   const riskAnalysisTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -320,6 +323,12 @@ export default function WriteLetter() {
     setScheduledTime(snapshot.scheduledTime);
   };
 
+  const handleVersionRestored = () => {
+    setLastSavedAt(new Date().toISOString());
+    setAutoSaveStatus('saved');
+    setTimeout(() => setAutoSaveStatus('idle'), 2500);
+  };
+
   const fetchEmotions = async () => {
     try {
       const res = await emotionsApi.getAll();
@@ -337,7 +346,7 @@ export default function WriteLetter() {
     );
   };
 
-  const validate = () => {
+  const validateLocal = () => {
     const newErrors: Record<string, string> = {};
     if (!recipient.trim()) newErrors.recipient = '请填写收件人';
     if (!title.trim()) newErrors.title = '请填写信件标题';
@@ -348,13 +357,56 @@ export default function WriteLetter() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
-    if (!validate() || !user) return;
+  const ensureDraftSaved = async (): Promise<string | null> => {
+    if (!user || !hasMeaningfulContent()) return null;
+    const c = contentRef.current;
+    try {
+      if (!draftId) {
+        const res = await draftsApi.createDraft({
+          senderId: user.id,
+          recipient: c.recipient,
+          recipientType: c.recipientType,
+          title: c.title,
+          content: c.content,
+          emotions: c.selectedEmotions,
+          isPublic: c.isPublic,
+          isAnonymous: c.isAnonymous,
+          deliverySpeed: c.deliverySpeed,
+          scheduledDelivery: c.scheduledDelivery,
+          scheduledDate: c.scheduledDate,
+          scheduledTime: c.scheduledTime,
+        });
+        if (res.success && res.data) {
+          setDraftId(res.data.id);
+          return res.data.id;
+        }
+        return null;
+      }
+      await draftsApi.updateDraft(draftId, {
+        recipient: c.recipient,
+        recipientType: c.recipientType,
+        title: c.title,
+        content: c.content,
+        emotions: c.selectedEmotions,
+        isPublic: c.isPublic,
+        isAnonymous: c.isAnonymous,
+        deliverySpeed: c.deliverySpeed,
+        scheduledDelivery: c.scheduledDelivery,
+        scheduledDate: c.scheduledDate,
+        scheduledTime: c.scheduledTime,
+      });
+      return draftId;
+    } catch {
+      return null;
+    }
+  };
 
-    let scheduledDeliveryAt: string | undefined;
+  const handleSubmit = async () => {
+    if (!validateLocal() || !user) return;
+
     if (scheduledDelivery && scheduledDate && scheduledTime) {
-      scheduledDeliveryAt = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
-      if (new Date(scheduledDeliveryAt).getTime() < Date.now()) {
+      const scheduledTs = new Date(`${scheduledDate}T${scheduledTime}`).getTime();
+      if (scheduledTs < Date.now()) {
         setErrors(prev => ({ ...prev, scheduled: '定时送达时间必须晚于当前时间' }));
         return;
       }
@@ -362,32 +414,46 @@ export default function WriteLetter() {
 
     try {
       setLoading(true);
-      if (draftId) {
-        const res = await draftsApi.submitDraft(draftId, { senderName: user.username, scheduledDeliveryAt });
-        if (res.success && res.data) {
-          showToast({ type: 'success', message: res.message || '信件已成功寄出！' });
-          setTimeout(() => navigate(`/letter/${res.data.letter.id}`), 800);
-        } else {
-          showToast({ type: 'error', message: res.message || '寄信失败' });
-        }
+      const currentDraftId = await ensureDraftSaved();
+      if (!currentDraftId) {
+        showToast({ type: 'error', message: '保存草稿失败，无法发送' });
+        return;
+      }
+
+      const res = await draftsApi.validateSubmit(currentDraftId);
+      if (res.success && res.data) {
+        setSubmitValidation(res.data);
+        setSubmitValidationOpen(true);
       } else {
-        const res = await lettersApi.createLetter(user.id, user.username, {
-          recipient: recipient.trim(), recipientType,
-          title: title.trim(), content: content.trim(),
-          emotions: selectedEmotions, isPublic, isAnonymous,
-          deliverySpeed, scheduledDeliveryAt,
-        });
-        if (res.success && res.data) {
-          showToast({ type: 'success', message: res.message || '信件已成功寄出！' });
-          setTimeout(() => navigate(`/letter/${res.data.id}`), 800);
-        } else {
-          showToast({ type: 'error', message: res.message || '寄信失败' });
-        }
+        showToast({ type: 'error', message: res.message || '校验请求失败' });
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.message || '校验请求失败' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitConfirm = async () => {
+    if (!user || !draftId) return;
+    try {
+      setSubmitting(true);
+      let scheduledDeliveryAt: string | undefined;
+      if (scheduledDelivery && scheduledDate && scheduledTime) {
+        scheduledDeliveryAt = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
+      }
+      const res = await draftsApi.submitDraft(draftId, { senderName: user.username, scheduledDeliveryAt });
+      if (res.success && res.data) {
+        showToast({ type: 'success', message: res.message || '信件已成功寄出！' });
+        setSubmitValidationOpen(false);
+        setTimeout(() => navigate(`/letter/${res.data.letter.id}`), 800);
+      } else {
+        showToast({ type: 'error', message: res.message || '寄信失败' });
       }
     } catch (err: any) {
       showToast({ type: 'error', message: err.response?.data?.message || '寄信失败，请重试' });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -930,7 +996,118 @@ export default function WriteLetter() {
         open={showVersionHistory}
         onClose={() => setShowVersionHistory(false)}
         onRestore={(snapshot) => handleRestoreSnapshot(snapshot)}
+        onRestored={handleVersionRestored}
       />
+
+      {submitValidationOpen && submitValidation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="glass-card w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl animate-scale-in">
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
+              <h3 className="font-serif-sc text-xl font-semibold text-white flex items-center gap-2">
+                {!submitValidation.valid ? (
+                  <><AlertTriangle className="w-5 h-5 text-red-400" />发送校验失败</>
+                ) : submitValidation.warnings?.length > 0 ? (
+                  <><AlertTriangle className="w-5 h-5 text-nebula-orange" />发送前提醒</>
+                ) : (
+                  <><CheckCircle className="w-5 h-5 text-nebula-mint" />确认发送</>
+                )}
+              </h3>
+              <button onClick={() => setSubmitValidationOpen(false)} className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="paper-card p-4 rounded-xl">
+                <p className="text-xs text-cosmic-700/60 mb-1">信件标题</p>
+                <p className="font-serif-sc text-lg font-semibold text-cosmic-900 truncate">
+                  {title || '(无标题)'}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-cosmic-300/40 text-cosmic-800">
+                    致{recipient || '(收件人)'}
+                  </span>
+                  <span className="text-xs text-cosmic-700/60">{content.length} 字</span>
+                </div>
+              </div>
+
+              {submitValidation.scheduledCheck?.isPast && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+                  <p className="text-sm text-red-300 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span>
+                      定时时间已过期。
+                      {submitValidation.scheduledCheck.suggestedDate && (
+                        <>建议时间：{submitValidation.scheduledCheck.suggestedDate} {submitValidation.scheduledCheck.suggestedTime}</>
+                      )}
+                    </span>
+                  </p>
+                </div>
+              )}
+
+              {!submitValidation.valid && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-red-300 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" />
+                    以下问题需要解决：
+                  </p>
+                  <div className="space-y-1.5">
+                    {Object.entries(submitValidation.errors).map(([key, msg]) => (
+                      <div key={key} className="flex items-start gap-2 p-3 rounded-lg bg-red-500/8 border border-red-500/20">
+                        <X className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                        <span className="text-sm text-red-300">{msg as string}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {submitValidation.warnings?.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-nebula-orange flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" />
+                    温馨提示：
+                  </p>
+                  <div className="space-y-1.5">
+                    {submitValidation.warnings.map((w, i) => (
+                      <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-nebula-orange/8 border border-nebula-orange/20">
+                        <AlertTriangle className="w-4 h-4 text-nebula-orange mt-0.5 shrink-0" />
+                        <span className="text-sm text-nebula-orange/90">{w}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {submitValidation.valid && submitValidation.warnings?.length === 0 && (
+                <div className="p-4 rounded-xl bg-nebula-mint/10 border border-nebula-mint/30">
+                  <p className="text-sm text-nebula-mint flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span>信件内容完整，可以立即发送。{scheduledDelivery && scheduledDate ? `将于 ${scheduledDate} ${scheduledTime} 定时送达。` : '将通过星尘航道立即送达。'}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-white/10 flex gap-3 justify-end">
+              <button onClick={() => setSubmitValidationOpen(false)} className="btn-secondary px-5 py-2.5 text-sm">
+                取消
+              </button>
+              <button
+                onClick={handleSubmitConfirm}
+                disabled={!submitValidation.valid || submitting}
+                className="btn-primary px-6 py-2.5 text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? (
+                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />发送中...</>
+                ) : (
+                  <><Send className="w-4 h-4" />{submitValidation.warnings?.length > 0 ? '仍然发送' : '确认发送'}</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
