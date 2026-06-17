@@ -151,9 +151,10 @@ export default function ReplyCard({
     }
   };
 
-  const sourceInfo = reply.source ? sourceConfig[reply.source] : null;
+  const resolvedSource = reply.source || (reply.isStrangerReply ? 'stranger' : null);
+  const sourceInfo = resolvedSource ? sourceConfig[resolvedSource as keyof typeof sourceConfig] : null;
   const SourceIcon = sourceInfo?.icon || Globe2;
-  const isAiReply = reply.source === 'ai_generated' || reply.source === 'ai_fallback';
+  const isAiReply = resolvedSource === 'ai_generated' || resolvedSource === 'ai_fallback';
   const marginLeft = depth > 0 ? 'ml-4 sm:ml-8' : '';
 
   return (

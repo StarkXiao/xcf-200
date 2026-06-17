@@ -1,3 +1,27 @@
 {
-  "drafts": []
+  "drafts": [
+    {
+      "id": "mqhk57ioinjxu2ua4",
+      "senderId": "user_001",
+      "recipient": "测试状态修复的自己",
+      "recipientType": "future",
+      "title": "测试AI选候选状态修复",
+      "content": "这是一封用于测试AI候选状态修复的测试信件。我将手动选择一条AI候选回复，并验证候选池状态是否正确显示为ai_selected（已选择AI回复），而不是错误的human_replied（已有人工回复）。",
+      "emotions": [
+        "温暖"
+      ],
+      "isPublic": true,
+      "isAnonymous": false,
+      "deliverySpeed": "standard",
+      "scheduledDelivery": false,
+      "scheduledDate": "",
+      "scheduledTime": "",
+      "autoSavedAt": "2026-06-17T04:16:51.569Z",
+      "versionCount": 2,
+      "wordCount": 101,
+      "createdAt": "2026-06-17T04:15:11.184Z",
+      "updatedAt": "2026-06-17T04:18:51.464Z",
+      "lastOpenedAt": "2026-06-17T04:15:11.184Z"
+    }
+  ]
 }

@@ -35,6 +35,13 @@ const poolStatusConfig = {
     bgColor: 'bg-starlight/10',
     borderColor: 'border-starlight/30',
   },
+  ai_selected: {
+    label: '已选择AI回复',
+    icon: Bot,
+    color: 'text-nebula-purple',
+    bgColor: 'bg-nebula-purple/10',
+    borderColor: 'border-nebula-purple/30',
+  },
   timeout_fallback: {
     label: 'AI超时补位',
     icon: Timer,
@@ -234,6 +241,20 @@ export default function ReplyCandidatePool({
               <p className="text-sm font-medium text-white">已收到陌生人的温暖回应 ✨</p>
               <p className="text-xs text-white/60">
                 候选池已关闭，你可以在下方查看陌生人的回复
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pool.status === 'ai_selected' && !hasHumanReply && (
+        <div className="mb-6 p-4 rounded-xl bg-nebula-purple/10 border border-nebula-purple/20">
+          <div className="flex items-center gap-3">
+            <Bot className="w-5 h-5 text-nebula-purple" />
+            <div>
+              <p className="text-sm font-medium text-white">你已手动选择了AI回复并发送 ✨</p>
+              <p className="text-xs text-white/60">
+                候选池已关闭，你可以在下方查看已发送的AI回复
               </p>
             </div>
           </div>

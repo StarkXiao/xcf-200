@@ -1317,7 +1317,7 @@ export interface InteractionQueryParams {
 }
 
 export type ReplyCandidateStatus = 'pending' | 'selected' | 'rejected' | 'timeout';
-export type ReplyPoolStatus = 'waiting_human' | 'human_replied' | 'timeout_fallback' | 'closed';
+export type ReplyPoolStatus = 'waiting_human' | 'human_replied' | 'ai_selected' | 'timeout_fallback' | 'closed';
 
 export interface ReplyCandidate {
   id: string;
