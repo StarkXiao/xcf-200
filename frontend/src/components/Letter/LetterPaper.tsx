@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { EyeOff, Trash2, AlertTriangle } from 'lucide-react';
 import type { Letter } from '@/types';
 import EmotionTag from '@/components/Emotion/EmotionTag';
 import { formatFullDate, getRecipientTypeLabel } from '@/utils/helpers';
@@ -11,6 +12,101 @@ export default function LetterPaper({ letter }: LetterPaperProps) {
   const [displayedContent, setDisplayedContent] = useState('');
   const [isTyping, setIsTyping] = useState(true);
   const recipientType = getRecipientTypeLabel(letter.recipientType);
+
+  if (letter.isRemoved) {
+    return (
+      <div className="paper-card shadow-paper-lg overflow-hidden animate-scale-in">
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-nebula-pink via-nebula-orange to-nebula-pink" />
+        <div className="relative pt-24 sm:pt-20 px-6 sm:px-10 pb-16 sm:pb-20 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-nebula-pink/10 flex items-center justify-center">
+            <Trash2 className="w-10 h-10 text-nebula-pink" />
+          </div>
+          <h2 className="font-serif-sc text-xl sm:text-2xl font-semibold text-cosmic-900 mb-3">
+            信件已被删除
+          </h2>
+          <p className="text-sm text-cosmic-700/70 mb-2">
+            该信件因违反社区规范已被永久删除
+          </p>
+          {letter.removedReason && (
+            <div className="mt-4 inline-block px-4 py-2 rounded-xl bg-nebula-pink/5 border border-nebula-pink/20">
+              <p className="text-xs text-cosmic-800/60 mb-1">删除原因</p>
+              <p className="text-sm text-cosmic-800 font-medium">{letter.removedReason}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (letter.isHidden) {
+    return (
+      <div className="paper-card shadow-paper-lg overflow-hidden animate-scale-in">
+        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-aurora via-nebula-purple to-aurora" />
+        <div className="relative pt-24 sm:pt-20 px-6 sm:px-10 pb-16 sm:pb-20">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-aurora/10 flex items-center justify-center">
+              <EyeOff className="w-10 h-10 text-aurora" />
+            </div>
+            <h2 className="font-serif-sc text-xl sm:text-2xl font-semibold text-cosmic-900 mb-3">
+              信件已被隐藏
+            </h2>
+            <p className="text-sm text-cosmic-700/70">
+              该信件因违反社区规范已被暂时隐藏
+            </p>
+            {letter.hiddenReason && (
+              <div className="mt-4 inline-block px-4 py-2 rounded-xl bg-aurora/5 border border-aurora/20">
+                <p className="text-xs text-cosmic-800/60 mb-1">隐藏原因</p>
+                <p className="text-sm text-cosmic-800 font-medium">{letter.hiddenReason}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="mb-6 sm:mb-8 text-center">
+            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium mb-4 ${recipientType.color}`}>
+              <span>{recipientType.icon}</span>
+              <span>致 · {recipientType.label}的{letter.recipient}</span>
+            </div>
+
+            <h1 className="font-serif-sc text-2xl sm:text-3xl lg:text-4xl font-bold text-cosmic-900 leading-tight">
+              {letter.title}
+            </h1>
+          </div>
+
+          <div className="flex items-center justify-between mb-8 pb-6 border-b border-dashed border-cosmic-900/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cosmic-100 to-cosmic-200 flex items-center justify-center text-xl">
+                {letter.senderName === '匿名星人' ? '🙈' : '✍️'}
+              </div>
+              <div>
+                <div className="text-sm font-medium text-cosmic-900">{letter.senderName}</div>
+                <div className="text-xs text-cosmic-700/60">{formatFullDate(letter.createdAt)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 sm:p-6 rounded-2xl bg-cosmic-900/5 border border-dashed border-cosmic-900/15">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-aurora shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-cosmic-800 mb-1">内容已隐藏</p>
+                <p className="text-xs text-cosmic-700/60">该信件内容因违反社区规范无法展示。如果您对此有疑问，可以联系管理员。</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 pt-6 border-t border-dashed border-cosmic-900/20">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex flex-wrap gap-2">
+                {letter.emotions.map((emo) => (
+                  <EmotionTag key={emo} name={emo} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     let currentIndex = 0;

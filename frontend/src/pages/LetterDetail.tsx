@@ -123,6 +123,7 @@ export default function LetterDetail() {
       favStore.initIfNeeded(user.id);
       loadFavoriteGroupId();
     }
+    checkReportStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -319,10 +320,16 @@ export default function LetterDetail() {
 
                   <button
                     onClick={() => setShowReplyForm(!showReplyForm)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-aurora/10 border border-aurora/20 hover:bg-aurora/20 transition-all"
+                    disabled={letter?.isHidden || letter?.isRemoved}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all ${
+                      letter?.isHidden || letter?.isRemoved
+                        ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed'
+                        : 'bg-aurora/10 border-aurora/20 hover:bg-aurora/20'
+                    }`}
+                    title={letter?.isRemoved ? '信件已删除，无法回复' : letter?.isHidden ? '信件已隐藏，暂时无法回复' : ''}
                   >
-                    <MessageSquare className="w-5 h-5 text-aurora" />
-                    <span className="font-medium text-aurora">{totalReplies}</span>
+                    <MessageSquare className={`w-5 h-5 ${letter?.isHidden || letter?.isRemoved ? 'text-white/30' : 'text-aurora'}`} />
+                    <span className={`font-medium ${letter?.isHidden || letter?.isRemoved ? 'text-white/30' : 'text-aurora'}`}>{totalReplies}</span>
                   </button>
 
                   <div className="flex items-center gap-2">
@@ -444,11 +451,11 @@ export default function LetterDetail() {
                 </div>
               </div>
 
-              {showReplyForm && (
+              {showReplyForm && !letter?.isRemoved && (
                 <div className="glass-card p-5 sm:p-6 mb-6 animate-scale-in">
                   <h4 className="font-medium text-white mb-4 flex items-center gap-2">
                     <Send className="w-4 h-4 text-aurora" />
-                    从你的平行世界送来回信
+                    {letter?.isHidden ? '信件已隐藏，暂时无法回复' : '从你的平行世界送来回信'}
                   </h4>
                   <div className="space-y-4">
                     <div>
@@ -559,7 +566,7 @@ export default function LetterDetail() {
                   <p className="text-sm text-white/50 mb-6">
                     也许在某个平行时空，它正被人阅读。要不要先留下你的回音？
                   </p>
-                  {!showReplyForm && (
+                  {!showReplyForm && !letter?.isHidden && !letter?.isRemoved && (
                     <button
                       onClick={() => setShowReplyForm(true)}
                       className="btn-secondary inline-flex items-center gap-2 px-6"
@@ -568,6 +575,18 @@ export default function LetterDetail() {
                       送出第一封回信
                     </button>
                   )}
+                </div>
+              )}
+
+              {letter?.isRemoved && (
+                <div className="glass-card p-10 sm:p-14 text-center mt-8">
+                  <div className="text-5xl mb-4">🚫</div>
+                  <p className="text-lg text-white/70 font-serif-sc mb-2">
+                    互动已停止
+                  </p>
+                  <p className="text-sm text-white/50">
+                    此信件因违反社区规范已被删除，无法继续进行互动
+                  </p>
                 </div>
               )}
             </section>

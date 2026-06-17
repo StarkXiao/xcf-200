@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Reply, ReplyQualityFeedback } from '@/types';
 import EmotionTag from '@/components/Emotion/EmotionTag';
 import RelayReplyForm from './RelayReplyForm';
@@ -20,6 +20,9 @@ import {
   Star,
   ThumbsUp,
   Flag,
+  EyeOff,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { lettersApi } from '@/api/letters';
 import { reportsApi } from '@/api/reports';
@@ -96,6 +99,24 @@ export default function ReplyCard({
   const [feedback, setFeedback] = useState<ReplyQualityFeedback | null>(reply.feedback || null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [hasReported, setHasReported] = useState(false);
+
+  useEffect(() => {
+    const checkReportStatus = async () => {
+      if (!user) {
+        setHasReported(false);
+        return;
+      }
+      try {
+        const res = await reportsApi.checkReported(reply.id, 'reply', user.id);
+        if (res.success) {
+          setHasReported(res.data.hasReported);
+        }
+      } catch (err) {
+        console.error('Failed to check report status', err);
+      }
+    };
+    checkReportStatus();
+  }, [reply.id, user]);
 
   const handleLike = async () => {
     if (likeLoading) return;
@@ -227,9 +248,61 @@ export default function ReplyCard({
               )}
             </div>
 
-            <p className={`text-white/85 leading-relaxed whitespace-pre-line mb-4 ${depth > 0 ? 'text-sm' : 'text-sm sm:text-base'}`}>
-              {reply.content}
-            </p>
+            {reply.isRemoved ? (
+              <div className="mb-4 p-4 rounded-xl bg-nebula-pink/5 border border-nebula-pink/20">
+                <div className="flex items-start gap-3">
+                  <Trash2 className="w-4 h-4 text-nebula-pink shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-white/80 mb-1">回复已被删除</p>
+                    <p className="text-xs text-white/50 mb-2">该回复因违反社区规范已被永久删除</p>
+                    {reply.removedReason && (
+                      <p className="text-xs text-nebula-pink/80">原因：{reply.removedReason}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : reply.isHidden ? (
+              <div className="mb-4">
+                <div className="p-4 rounded-xl bg-aurora/5 border border-dashed border-aurora/20">
+                  <div className="flex items-start gap-3">
+                    <EyeOff className="w-4 h-4 text-aurora shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white/80 mb-1">回复已被隐藏</p>
+                      <p className="text-xs text-white/50 mb-2">该回复因违反社区规范已被暂时隐藏</p>
+                      {reply.hiddenReason && (
+                        <p className="text-xs text-aurora/80">原因：{reply.hiddenReason}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <details className="mt-3">
+                  <summary className="text-xs text-white/40 hover:text-white/60 cursor-pointer transition-colors">
+                    查看隐藏内容
+                  </summary>
+                  <p className={`text-white/60 leading-relaxed whitespace-pre-line mt-3 text-sm pl-7 border-l-2 border-aurora/30 ${depth > 0 ? 'text-xs' : ''}`}>
+                    {reply.content}
+                  </p>
+                </details>
+              </div>
+            ) : (
+              <p className={`text-white/85 leading-relaxed whitespace-pre-line mb-4 ${depth > 0 ? 'text-sm' : 'text-sm sm:text-base'}`}>
+                {reply.content}
+              </p>
+            )}
+
+            {reply.warnings && reply.warnings.length > 0 && !reply.isHidden && !reply.isRemoved && (
+              <div className="mb-4 p-3 rounded-xl bg-yellow-400/5 border border-yellow-400/20">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-medium text-yellow-400/80 mb-1">
+                      已收到 {reply.warnings.length} 次警告
+                    </p>
+                    <p className="text-xs text-white/50">最新警告：{reply.warnings[0].reason}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {feedback && (
               <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">

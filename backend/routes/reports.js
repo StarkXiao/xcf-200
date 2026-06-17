@@ -77,6 +77,129 @@ router.get('/types', (req, res) => {
   });
 });
 
+router.get('/stats', (req, res) => {
+  const reportData = readJSON('reports.json') || { reports: [] };
+
+  const stats = {
+    total: reportData.reports.length,
+    pending: reportData.reports.filter(r => r.status === 'pending').length,
+    processing: reportData.reports.filter(r => r.status === 'processing').length,
+    resolved: reportData.reports.filter(r => r.status === 'resolved').length,
+    rejected: reportData.reports.filter(r => r.status === 'rejected').length,
+    byType: {},
+    byTargetType: {
+      letter: reportData.reports.filter(r => r.targetType === 'letter').length,
+      reply: reportData.reports.filter(r => r.targetType === 'reply').length
+    },
+    todayCount: reportData.reports.filter(r => {
+      const today = new Date();
+      const reportDate = new Date(r.createdAt);
+      return reportDate.toDateString() === today.toDateString();
+    }).length
+  };
+
+  Object.keys(REPORT_TYPES).forEach(type => {
+    stats.byType[type] = reportData.reports.filter(r => r.reportType === type).length;
+  });
+
+  res.json({
+    success: true,
+    data: stats
+  });
+});
+
+router.get('/check-reported/:targetId', (req, res) => {
+  const { targetId } = req.params;
+  const { targetType = 'letter', userId } = req.query;
+
+  const reportData = readJSON('reports.json') || { reports: [] };
+  const targetReports = reportData.reports.filter(
+    r => r.targetId === targetId && r.targetType === targetType
+  );
+
+  const hasUserReported = userId
+    ? targetReports.some(r => r.reporterId === userId)
+    : false;
+
+  let reviewStatus = 'normal';
+  if (targetReports.length > 0) {
+    const latestReport = targetReports.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+    if (latestReport.status === 'resolved') {
+      reviewStatus = 'resolved';
+    } else if (latestReport.status === 'rejected') {
+      reviewStatus = 'rejected';
+    } else {
+      reviewStatus = 'pending_review';
+    }
+  }
+
+  res.json({
+    success: true,
+    data: {
+      hasReported: hasUserReported,
+      reportCount: targetReports.length,
+      reviewStatus,
+      targetId,
+      targetType
+    }
+  });
+});
+
+router.get('/user/:userId', (req, res) => {
+  const { userId } = req.params;
+  const { status, page = 1, limit = 20 } = req.query;
+
+  if (!userId) {
+    return res.status(400).json({ success: false, message: '缺少用户ID' });
+  }
+
+  const reportData = readJSON('reports.json') || { reports: [] };
+  let reports = reportData.reports.filter(r => r.reporterId === userId);
+
+  if (status) {
+    reports = reports.filter(r => r.status === status);
+  }
+
+  reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const pageNum = parseInt(page);
+  const limitNum = parseInt(limit);
+  const start = (pageNum - 1) * limitNum;
+  const paginated = reports.slice(start, start + limitNum);
+
+  const reportsWithContent = paginated.map(report => {
+    let targetTitle = '';
+    let targetContent = '';
+
+    if (report.targetType === 'letter') {
+      const letter = getLetterById(report.targetId);
+      targetTitle = letter?.title || '';
+      targetContent = letter?.content?.substring(0, 100) || '';
+    } else if (report.targetType === 'reply') {
+      const replyInfo = getReplyById(report.targetId);
+      if (replyInfo) {
+        targetTitle = replyInfo.letter?.title || '';
+        targetContent = replyInfo.reply?.content?.substring(0, 100) || '';
+      }
+    }
+
+    return {
+      ...report,
+      targetTitle,
+      targetContent,
+      statusLabel: REPORT_STATUS[report.status]
+    };
+  });
+
+  res.json({
+    success: true,
+    data: reportsWithContent,
+    total: reports.length,
+    page: pageNum,
+    limit: limitNum
+  });
+});
+
 router.post('/', (req, res) => {
   const { targetId, targetType, reportType, reason, reporterId, reporterName } = req.body;
 
@@ -169,61 +292,6 @@ router.post('/', (req, res) => {
     success: true,
     message: '举报已提交，我们会尽快处理',
     data: report
-  });
-});
-
-router.get('/user/:userId', (req, res) => {
-  const { userId } = req.params;
-  const { status, page = 1, limit = 20 } = req.query;
-
-  if (!userId) {
-    return res.status(400).json({ success: false, message: '缺少用户ID' });
-  }
-
-  const reportData = readJSON('reports.json') || { reports: [] };
-  let reports = reportData.reports.filter(r => r.reporterId === userId);
-
-  if (status) {
-    reports = reports.filter(r => r.status === status);
-  }
-
-  reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  const pageNum = parseInt(page);
-  const limitNum = parseInt(limit);
-  const start = (pageNum - 1) * limitNum;
-  const paginated = reports.slice(start, start + limitNum);
-
-  const reportsWithContent = paginated.map(report => {
-    let targetTitle = '';
-    let targetContent = '';
-
-    if (report.targetType === 'letter') {
-      const letter = getLetterById(report.targetId);
-      targetTitle = letter?.title || '';
-      targetContent = letter?.content?.substring(0, 100) || '';
-    } else if (report.targetType === 'reply') {
-      const replyInfo = getReplyById(report.targetId);
-      if (replyInfo) {
-        targetTitle = replyInfo.letter?.title || '';
-        targetContent = replyInfo.reply?.content?.substring(0, 100) || '';
-      }
-    }
-
-    return {
-      ...report,
-      targetTitle,
-      targetContent,
-      statusLabel: REPORT_STATUS[report.status]
-    };
-  });
-
-  res.json({
-    success: true,
-    data: reportsWithContent,
-    total: reports.length,
-    page: pageNum,
-    limit: limitNum
   });
 });
 
@@ -522,74 +590,6 @@ router.post('/:id/handle', (req, res) => {
     success: true,
     message: '处理完成',
     data: report
-  });
-});
-
-router.get('/stats', (req, res) => {
-  const reportData = readJSON('reports.json') || { reports: [] };
-
-  const stats = {
-    total: reportData.reports.length,
-    pending: reportData.reports.filter(r => r.status === 'pending').length,
-    processing: reportData.reports.filter(r => r.status === 'processing').length,
-    resolved: reportData.reports.filter(r => r.status === 'resolved').length,
-    rejected: reportData.reports.filter(r => r.status === 'rejected').length,
-    byType: {},
-    byTargetType: {
-      letter: reportData.reports.filter(r => r.targetType === 'letter').length,
-      reply: reportData.reports.filter(r => r.targetType === 'reply').length
-    },
-    todayCount: reportData.reports.filter(r => {
-      const today = new Date();
-      const reportDate = new Date(r.createdAt);
-      return reportDate.toDateString() === today.toDateString();
-    }).length
-  };
-
-  Object.keys(REPORT_TYPES).forEach(type => {
-    stats.byType[type] = reportData.reports.filter(r => r.reportType === type).length;
-  });
-
-  res.json({
-    success: true,
-    data: stats
-  });
-});
-
-router.get('/check-reported/:targetId', (req, res) => {
-  const { targetId } = req.params;
-  const { targetType = 'letter', userId } = req.query;
-
-  const reportData = readJSON('reports.json') || { reports: [] };
-  const targetReports = reportData.reports.filter(
-    r => r.targetId === targetId && r.targetType === targetType
-  );
-
-  const hasUserReported = userId
-    ? targetReports.some(r => r.reporterId === userId)
-    : false;
-
-  let reviewStatus = 'normal';
-  if (targetReports.length > 0) {
-    const latestReport = targetReports.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
-    if (latestReport.status === 'resolved') {
-      reviewStatus = 'resolved';
-    } else if (latestReport.status === 'rejected') {
-      reviewStatus = 'rejected';
-    } else {
-      reviewStatus = 'pending_review';
-    }
-  }
-
-  res.json({
-    success: true,
-    data: {
-      hasReported: hasUserReported,
-      reportCount: targetReports.length,
-      reviewStatus,
-      targetId,
-      targetType
-    }
   });
 });
 
