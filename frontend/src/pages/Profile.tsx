@@ -5,7 +5,7 @@ import {
   User as UserIcon, Edit3, LogOut, ChevronRight, FileText, MessageCircle,
   Route, AlertTriangle, ExternalLink, Award, Trophy, Plus, Trash2,
   FolderOpen, Bell, Check, CheckSquare, Square, Move, BarChart3, Eye,
-  Zap, Filter, Clock, ArrowUpDown, BookOpen
+  Zap, Filter, Clock, ArrowUpDown, BookOpen, Share2
 } from 'lucide-react';
 import LetterCard from '@/components/Letter/LetterCard';
 import MailRouteStatsCard from '@/components/MailRoute/MailRouteStatsCard';
@@ -16,12 +16,14 @@ import FavoritesStats from '@/components/Favorites/FavoritesStats';
 import ReminderList from '@/components/Favorites/ReminderList';
 import ReminderModal from '@/components/Favorites/ReminderModal';
 import GrowthArchive from '@/components/GrowthArchive/GrowthArchive';
+import { SharePosterModal } from '@/components/Share';
 import { userApi } from '@/api/user';
 import { lettersApi } from '@/api/letters';
 import { activitiesApi } from '@/api/activities';
 import { favoritesApi, type GroupWithCount } from '@/api/favorites';
 import { draftsApi } from '@/api/drafts';
-import type { DraftStats } from '@/types';
+import { sharesApi } from '@/api/shares';
+import type { DraftStats, SharePosterData, ShareStats } from '@/types';
 import useAuthStore from '@/store/useAuthStore';
 import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
@@ -93,6 +95,8 @@ export default function Profile() {
 
   const [growthData, setGrowthData] = useState<GrowthProfileData | null>(null);
   const [growthLoading, setGrowthLoading] = useState(false);
+  const [showSharePoster, setShowSharePoster] = useState(false);
+  const [userShareStats, setUserShareStats] = useState<ShareStats | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
@@ -105,6 +109,18 @@ export default function Profile() {
     fetchAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
+
+  const fetchUserShareStats = async () => {
+    if (!user) return;
+    try {
+      const res = await sharesApi.getUserShareStats(user.id);
+      if (res.success && res.data) {
+        setUserShareStats(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch user share stats', err);
+    }
+  };
 
   const fetchAllData = async () => {
     if (!user) return;
@@ -133,6 +149,7 @@ export default function Profile() {
       if (favStatsRes.success) setFavStats(favStatsRes.data);
       if (remindersRes.success) setReminders(remindersRes.data as ReminderWithLetter[]);
       if (draftStatsRes.success) setDraftStats(draftStatsRes.data);
+      fetchUserShareStats();
     } catch (err) {
       showToast({ type: 'error', message: '加载数据失败' });
     } finally {
@@ -454,9 +471,30 @@ export default function Profile() {
                   </p>
                 )}
 
-                <div className="mt-5 pt-5 border-t border-white/10 flex items-center justify-center gap-4 text-xs text-white/50">
-                  <Calendar className="w-4 h-4" />
-                  <span>加入于 {formatDate(user.createdAt)}</span>
+                <div className="mt-5 pt-5 border-t border-white/10 flex flex-col items-center gap-3">
+                  <div className="flex items-center gap-4 text-xs text-white/50">
+                    <Calendar className="w-4 h-4" />
+                    <span>加入于 {formatDate(user.createdAt)}</span>
+                  </div>
+                  <button
+                    onClick={() => setShowSharePoster(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-nebula-purple/25 to-aurora/25 border border-nebula-purple/30 hover:from-nebula-purple/35 hover:to-aurora/35 transition-all text-white text-sm font-medium shadow-glow-sm"
+                  >
+                    <Sparkles className="w-4 h-4 text-starlight" />
+                    生成我的名片
+                  </button>
+                  {userShareStats && userShareStats.totalShares > 0 && (
+                    <div className="flex items-center gap-3 text-[11px] text-white/50">
+                      <div className="flex items-center gap-1">
+                        <Share2 className="w-3 h-3" />
+                        <span>{userShareStats.totalShares}次分享</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        <span>{userShareStats.totalViews}次浏览</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1524,6 +1562,28 @@ export default function Profile() {
         }}
         onSubmit={handleCreateReminder}
         letterTitle={reminderLetter?.title}
+      />
+
+      <SharePosterModal
+        open={showSharePoster}
+        onClose={() => {
+          setShowSharePoster(false);
+          fetchUserShareStats();
+        }}
+        data={{
+          targetType: 'profile',
+          targetId: user?.id || '',
+          senderName: user?.username,
+          senderAvatar: user?.avatar,
+          userStats: {
+            totalLetters: stats?.totalLetters || 0,
+            totalLikes: stats?.totalLikes || 0,
+            totalReplies: stats?.totalReplies || 0,
+            totalFavorites: stats?.totalFavorites || 0,
+            joinDate: user?.createdAt,
+          },
+          letterCount: userLetters?.length || 0,
+        } as SharePosterData}
       />
     </div>
   );

@@ -22,6 +22,7 @@ const skillRoutes = require('./routes/skills');
 const growthProfileRoutes = require('./routes/growthProfile');
 const plazaRoutes = require('./routes/plaza');
 const reportRoutes = require('./routes/reports');
+const sharesRoutes = require('./routes/shares');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -49,6 +50,7 @@ app.use('/api/skills', skillRoutes);
 app.use('/api/growth-profile', growthProfileRoutes);
 app.use('/api/plaza', plazaRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/shares', sharesRoutes);
 
 app.get('/api', (req, res) => {
   res.json({ 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Heart, BookmarkPlus, Bookmark, ArrowLeft, Send, MessageSquare, Sparkles, Share2, Bell, FolderOpen, Users, Flag, AlertTriangle } from 'lucide-react';
+import { Heart, BookmarkPlus, Bookmark, ArrowLeft, Send, MessageSquare, Sparkles, Share2, Bell, FolderOpen, Users, Flag, AlertTriangle, BarChart3 } from 'lucide-react';
 import LetterPaper from '@/components/Letter/LetterPaper';
 import ReplyCard from '@/components/Letter/ReplyCard';
 import ReplyCandidatePool from '@/components/Letter/ReplyCandidatePool';
@@ -13,13 +13,15 @@ import EmotionChainDisplay from '@/components/Letter/EmotionChainDisplay';
 import FeaturedReplies from '@/components/Letter/FeaturedReplies';
 import ReportModal from '@/components/Report/ReportModal';
 import ContentStatusBadge from '@/components/Report/ContentStatusBadge';
+import { SharePosterModal } from '@/components/Share';
 import { lettersApi } from '@/api/letters';
 import { reportsApi } from '@/api/reports';
 import { favoritesApi, type GroupWithCount } from '@/api/favorites';
+import { sharesApi } from '@/api/shares';
 import useAuthStore from '@/store/useAuthStore';
 import useFavoriteStore from '@/store/useFavoriteStore';
 import useUIStore from '@/store/useUIStore';
-import type { Letter, Reply, LetterCollaborationData, ReportCheckResult } from '@/types';
+import type { Letter, Reply, LetterCollaborationData, ReportCheckResult, SharePosterData } from '@/types';
 
 type ActiveTab = 'all' | 'featured' | 'chains';
 
@@ -48,6 +50,8 @@ export default function LetterDetail() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('all');
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportCheck, setReportCheck] = useState<ReportCheckResult | null>(null);
+  const [showSharePoster, setShowSharePoster] = useState(false);
+  const [shareStats, setShareStats] = useState<{ totalShares: number; totalViews: number } | null>(null);
 
   const isFavorited = id ? favStore.isFavorited(id) : false;
 
@@ -111,10 +115,26 @@ export default function LetterDetail() {
     }
   };
 
+  const fetchShareStats = async () => {
+    if (!id) return;
+    try {
+      const res = await sharesApi.getShareStatsByTarget('letter', id);
+      if (res.success && res.data) {
+        setShareStats({
+          totalShares: res.data.totalShares,
+          totalViews: res.data.totalViews,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch share stats', err);
+    }
+  };
+
   useEffect(() => {
     fetchLetter();
     fetchCollaboration();
     checkReportStatus();
+    fetchShareStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -379,16 +399,35 @@ export default function LetterDetail() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    showToast({ type: 'success', message: '链接已复制到剪贴板 ✨' });
-                  }}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/70"
-                >
-                  <Share2 className="w-5 h-5" />
-                  <span className="text-sm font-medium">分享</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowSharePoster(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-nebula-purple/20 to-aurora/20 border border-nebula-purple/30 hover:from-nebula-purple/30 hover:to-aurora/30 transition-all text-white"
+                  >
+                    <Sparkles className="w-5 h-5 text-starlight" />
+                    <span className="text-sm font-medium">生成海报</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      showToast({ type: 'success', message: '链接已复制到剪贴板 ✨' });
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/70"
+                  >
+                    <Share2 className="w-5 h-5" />
+                    <span className="text-sm font-medium">复制链接</span>
+                  </button>
+                  {shareStats && (shareStats.totalShares > 0 || shareStats.totalViews > 0) && (
+                    <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-starlight/10 border border-starlight/20">
+                      <BarChart3 className="w-4 h-4 text-starlight" />
+                      <span className="text-xs text-starlight font-medium">
+                        {shareStats.totalShares > 0 && `${shareStats.totalShares}次分享`}
+                        {shareStats.totalShares > 0 && shareStats.totalViews > 0 && ' · '}
+                        {shareStats.totalViews > 0 && `${shareStats.totalViews}次浏览`}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
                 <button
                   onClick={() => setShowReportModal(true)}
@@ -677,6 +716,27 @@ export default function LetterDetail() {
             checkReportStatus();
             fetchLetter();
           }}
+        />
+
+        <SharePosterModal
+          open={showSharePoster}
+          onClose={() => {
+            setShowSharePoster(false);
+            fetchShareStats();
+          }}
+          data={{
+            targetType: 'letter',
+            targetId: id || '',
+            title: letter?.title,
+            content: letter?.content,
+            senderName: letter?.senderName,
+            recipient: letter?.recipient,
+            emotions: letter?.emotions,
+            likes: likes,
+            repliesCount: totalReplies,
+            views: letter?.views,
+            createdAt: letter?.createdAt,
+          } as SharePosterData}
         />
       </div>
     </div>

@@ -1776,3 +1776,78 @@ export interface ReportWarning {
   warnedBy: string;
   warnedAt: string;
 }
+
+export type ShareTargetType = 'letter' | 'profile';
+
+export type PosterEmotionStyle =
+  | 'warm'
+  | 'healing'
+  | 'hope'
+  | 'miss'
+  | 'mystery'
+  | 'happiness'
+  | 'courage'
+  | 'auto';
+
+export interface SharePosterData {
+  targetType: ShareTargetType;
+  targetId: string;
+  title?: string;
+  content?: string;
+  senderName?: string;
+  senderAvatar?: string;
+  recipient?: string;
+  emotions?: string[];
+  likes?: number;
+  repliesCount?: number;
+  views?: number;
+  createdAt?: string;
+  userStats?: {
+    totalLetters?: number;
+    totalLikes?: number;
+    totalReplies?: number;
+    totalFavorites?: number;
+    joinDate?: string;
+  };
+  letterCount?: number;
+}
+
+export interface ShareRecord {
+  id: string;
+  targetType: ShareTargetType;
+  targetId: string;
+  userId: string | null;
+  shareChannel: string;
+  emotionStyle: PosterEmotionStyle;
+  isAnonymous: boolean;
+  createdAt: string;
+}
+
+export interface ShareStats {
+  totalShares: number;
+  totalViews: number;
+  uniqueViewers: number;
+  shareBreakdown: {
+    letter: number;
+    profile: number;
+  };
+  channelBreakdown: Record<string, number>;
+  emotionStyleBreakdown: Record<PosterEmotionStyle, number>;
+  topSharedLetters: {
+    letterId: string;
+    title: string;
+    shareCount: number;
+  }[];
+  recentShares: ShareRecord[];
+}
+
+export interface ShareViewRecord {
+  id: string;
+  shareId: string;
+  targetType: ShareTargetType;
+  targetId: string;
+  viewerId: string | null;
+  viewerIp?: string;
+  viewedAt: string;
+  shareUrl: string;
+}
